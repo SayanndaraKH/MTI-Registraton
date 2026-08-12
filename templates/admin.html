@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Course Sales & KHQR Automation</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=2.0">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="/admin" class="brand">
+      <div class="brand-icon">⚙️</div>
+      <span>ADMIN DASHBOARD</span>
+    </a>
+    <div class="nav-links">
+      <a href="/" target="_blank" class="btn btn-outline btn-sm">🌐 មើលគេហទំព័រ (View Catalog)</a>
+    </div>
+  </nav>
+
+  <main class="admin-container">
+    
+    <!-- Top Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <h1 style="font-size: 2rem; font-weight: 800; color: #fff;">ផ្ទាំងគ្រប់គ្រងប្រព័ន្ធ (System Management)</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          តាមដានការចុះឈ្មោះសិស្ស ចំណូល KHQR និងកំណត់ប្រព័ន្ធ Telegram Bot
+        </p>
+      </div>
+      <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+        <button id="newCourseBtn" class="btn btn-primary">
+          ➕ បន្ថែមវគ្គសិក្សា (Add Course)
+        </button>
+        <a href="/logout" class="btn btn-outline">🚪 ចាកចេញ (Logout)</a>
+      </div>
+    </div>
+
+    <!-- Analytics Stats Grid -->
+    <div class="admin-grid">
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div>
+          <div class="stat-val" id="statTotalReg">0</div>
+          <div class="stat-lbl">ការចុះឈ្មោះសរុប (Total Registrations)</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">✓</div>
+        <div>
+          <div class="stat-val" id="statPaidReg" style="color: #10b981;">0</div>
+          <div class="stat-lbl">បានបង់ប្រាក់រួច (Paid Students)</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">⏳</div>
+        <div>
+          <div class="stat-val" id="statPendingReg" style="color: #f59e0b;">0</div>
+          <div class="stat-lbl">រង់ចាំបង់ប្រាក់ (Pending Payments)</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(124, 58, 237, 0.15); color: #a78bfa;">💵</div>
+        <div>
+          <div class="stat-val" id="statRevenueUsd" style="color: #a78bfa;">$0.00</div>
+          <div class="stat-lbl">ចំណូលសរុប USD (Total USD Revenue)</div>
+          <div style="font-size: 0.8rem; color: #94a3b8;" id="statRevenueKhr">0 KHR</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registrations Section -->
+    <section style="margin-bottom: 3rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+        <h2 style="font-size: 1.4rem; font-weight: 700; color: #fff;">
+          📋 បញ្ជីឈ្មោះសិស្សចុះឈ្មោះ (Student Registrations)
+        </h2>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <input type="text" id="searchInput" class="form-input" placeholder="🔍 ស្វែងរកតាមឈ្មោះ/លេខទូរស័ព្ទ..." style="width: 250px; padding: 0.5rem 0.85rem; font-size:0.85rem;">
+          <select id="statusFilter" class="form-select" style="width: 160px; padding: 0.5rem 0.85rem; font-size:0.85rem;">
+            <option value="ALL">គ្រប់ស្ថានភាពទាំងអស់</option>
+            <option value="PAID">✓ Paid (បានបង់)</option>
+            <option value="SUBMITTED">🧾 Submitted (បានផ្ញើវិក័យបត្រ)</option>
+            <option value="PENDING">⏳ Pending (មិនទាន់បង់)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Invoice ID</th>
+              <th>ឈ្មោះសិស្ស (Student)</th>
+              <th>លេខទូរស័ព្ទ (Phone)</th>
+              <th>Telegram</th>
+              <th>វគ្គសិក្សា (Course)</th>
+              <th>តម្លៃ (Amount)</th>
+              <th>វិក័យបត្រ (Receipt)</th>
+              <th>ស្ថានភាព (Status)</th>
+              <th>សកម្មភាព (Actions)</th>
+            </tr>
+          </thead>
+          <tbody id="registrationsTbody">
+            <tr>
+              <td colspan="9" style="text-align: center; color: #94a3b8; padding: 2rem;">
+                ⏳ កំពុងទាញយកទិន្នន័យ... (Loading registrations...)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- User Accounts Section -->
+    <section style="margin-bottom: 3rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.4rem; font-weight: 700; color: #fff;">
+            👥 គណនីអ្នកប្រើប្រាស់ (User Accounts)
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+            Admin ជាអ្នកបង្កើតគណនី និងលេខសម្ងាត់ទាំងអស់ — សិស្សមិនអាចចុះឈ្មោះគណនីដោយខ្លួនឯងបានទេ។
+          </p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <input type="text" id="userSearchInput" class="form-input" placeholder="🔍 ស្វែងរកគណនី..." style="width: 220px; padding: 0.5rem 0.85rem; font-size:0.85rem;">
+          <button id="newUserBtn" class="btn btn-primary btn-sm">➕ បង្កើតគណនីថ្មី (New User)</button>
+        </div>
+      </div>
+
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>ឈ្មោះគណនី (Username)</th>
+              <th>លេខសម្ងាត់ (Password)</th>
+              <th>ឈ្មោះពេញ (Full Name)</th>
+              <th>តួនាទី (Role)</th>
+              <th>ស្ថានភាព (Status)</th>
+              <th>សកម្មភាព (Actions)</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody">
+            <tr>
+              <td colspan="7" style="text-align: center; color: #94a3b8; padding: 2rem;">
+                ⏳ កំពុងទាញយកគណនី... (Loading users...)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Course Management Section -->
+    <section style="margin-bottom: 3rem;">
+      <h2 style="font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 1rem;">
+        📚 គ្រប់គ្រងវគ្គសិក្សា (Course Management)
+      </h2>
+      <div class="courses-grid" id="adminCourseList">
+        <!-- Dynamically rendered -->
+      </div>
+    </section>
+
+    <!-- Bottom Grid: System Settings (Left) & Student Live Chat (Right) Side-by-Side -->
+    <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; align-items: stretch;">
+
+      <!-- Column 1 (Left): System Settings -->
+      <div style="background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 1.5rem; display: flex; flex-direction: column;">
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+          ⚙️ ការកំណត់ KHQR & Telegram (System Settings)
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.83rem; margin-bottom: 1.25rem;">
+          Upload រូប KHQR និងកំណត់ Link Telegram ដែលនិស្សិតនឹងឃើញនៅពេលទូទាត់ប្រាក់៖
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">🖼️ KHQR Payment Image (Upload)</label>
+          <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <img id="khqrPreviewImg" src="" alt="KHQR Preview" style="width:120px; height:120px; object-fit:contain; background:#fff; border-radius:var(--radius-md); border:1px solid var(--glass-border); display:none;">
+            <div>
+              <input type="file" id="khqrFileInput" class="form-input" accept="image/png,image/jpeg,image/webp" style="max-width:280px;">
+              <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.4rem;">JPG, PNG ឬ WEBP។ រូបនេះនឹងបង្ហាញដល់និស្សិតគ្រប់គ្នានៅពេលទូទាត់ប្រាក់។</p>
+            </div>
+          </div>
+        </div>
+
+        <form id="settingsForm" style="margin-top: 1rem; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label" for="settingTelegramLink">✈️ Link Telegram (ផ្ញើកូដទៅ Admin)</label>
+              <input type="text" id="settingTelegramLink" class="form-input" placeholder="https://t.me/your_telegram_username">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="settingGroupLink">🔗 Link Group Telegram (ចូលរួមក្រុមឯកជន)</label>
+              <input type="text" id="settingGroupLink" class="form-input" placeholder="https://t.me/+YourTelegramGroupLink">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="settingPhone">📞 លេខទូរស័ព្ទ (Phone Number)</label>
+              <input type="text" id="settingPhone" class="form-input" placeholder="012 345 678">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: 1.25rem; align-self: flex-start; padding: 0.75rem 1.5rem;">
+            💾 រក្សាទុកការកំណត់ (Save Settings)
+          </button>
+        </form>
+      </div>
+
+      <!-- Column 2 (Right): Student Live Chat -->
+      <div style="background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 1.5rem; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin:0;">
+              💬 ផ្ទាំងឆាត និងសារពីសិស្ស (Student Live Chat)
+            </h2>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.25rem;">
+              មើល និងឆ្លើយតបសារសិស្សផ្ទាល់តាមរយៈប្រព័ន្ធ
+            </p>
+          </div>
+          <button id="refreshAdminChatBtn" class="btn btn-outline btn-sm">🔄 Refresh</button>
+        </div>
+
+        <div class="admin-chat-layout" style="flex:1; min-height:460px;">
+          <!-- Student Conversations List -->
+          <div class="conv-list" id="adminConvList">
+            <div style="text-align:center; color:#94a3b8; padding:2rem; font-size:0.85rem;">
+              ⏳ កំពុងទាញយកបញ្ជីឆាត...
+            </div>
+          </div>
+
+          <!-- Chat Conversation Messages Thread -->
+          <div style="display:flex; flex-direction:column; height:100%;">
+            <div class="chat-header" id="adminChatHeader">
+              <div>
+                <h4 style="font-size:0.95rem; font-weight:700; color:#fff; margin:0;" id="adminActiveStudentName">
+                  👈 សូមជ្រើសរើសសិស្សដើម្បីចាប់ផ្តើមឆាត
+                </h4>
+                <span style="font-size:0.8rem; color:#60a5fa;" id="adminActiveStudentInfo"></span>
+              </div>
+              <button id="clearAdminChatHistoryBtn" class="btn btn-outline btn-sm" title="លុបប្រវត្តិឆាតទាំងអស់របស់សិស្សនេះ" style="display:none; padding:0.25rem 0.6rem; font-size:0.78rem; color:#fca5a5; border-color:rgba(239,68,68,0.4);">
+                🗑️ លុបប្រវត្តិឆាត (Clear)
+              </button>
+            </div>
+
+            <div class="chat-messages-box" id="adminChatMessages">
+              <div style="text-align:center; color:#94a3b8; padding:3rem; font-size:0.85rem;">
+                👈 សូមជ្រើសរើសឈ្មោះសិស្សនៅខាងឆ្វេង ដើម្បីមើលសារ និងឆ្លើយតប
+              </div>
+            </div>
+
+            <form id="adminChatForm" class="chat-input-bar" style="display:none;">
+              <input type="text" id="adminChatInput" class="form-input" placeholder="សរសេរសារឆ្លើយតបទៅសិស្ស..." autocomplete="off" required style="font-size:0.88rem; padding:0.6rem 0.85rem;">
+              <button type="submit" id="adminChatSendBtn" class="btn btn-primary btn-sm" style="padding:0.6rem 1.25rem;">
+                ផ្ញើសារ 📤
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Add/Edit Course Modal -->
+  <div class="modal-overlay" id="courseModal">
+    <div class="modal-card modal-card-lg">
+      <button class="modal-close" onclick="document.getElementById('courseModal').classList.remove('active')">✕</button>
+      <h3 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 1.25rem;" id="courseModalTitle">
+        បន្ថែមវគ្គសិក្សាថ្មី
+      </h3>
+
+      <form id="courseForm">
+        <input type="hidden" id="courseIdInput">
+        <input type="hidden" id="courseImageUrlInput">
+
+        <div class="form-group">
+          <label class="form-label">🖼️ រូបភាពវគ្គសិក្សា (Course Image)</label>
+          <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <img id="coursePreviewImg" src="" alt="Course preview"
+                 style="width:140px; height:90px; object-fit:cover; border-radius:var(--radius-md); border:1px solid var(--glass-border); display:none;">
+            <div style="flex:1; min-width:220px;">
+              <input type="file" id="courseFileInput" class="form-input" accept="image/png,image/jpeg,image/webp">
+              <p style="color:var(--text-muted); font-size:0.78rem; margin-top:0.4rem;" id="courseImageNote">
+                JPG, PNG ឬ WEBP។ រូបនេះបង្ហាញនៅលើកាតវគ្គសិក្សាដល់សិស្ស។
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="courseTitleInput">📖 ឈ្មោះវគ្គសិក្សា (Course Title) *</label>
+          <input type="text" id="courseTitleInput" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="courseDescInput">📝 ការពិពណ៌នា (Description)</label>
+          <textarea id="courseDescInput" class="form-textarea" rows="4" style="min-height:90px;"></textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="courseUsdInput">💵 តម្លៃ USD ($) *</label>
+            <input type="number" step="0.01" id="courseUsdInput" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="courseKhrInput">៛ តម្លៃ KHR (៛) *</label>
+            <input type="number" step="100" id="courseKhrInput" class="form-input" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="courseDurationInput">⏱️ រយៈពេល (Duration)</label>
+          <input type="text" id="courseDurationInput" class="form-input" placeholder="4 Weeks">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="courseGroupLinkInput">🔗 Link Group Telegram សម្រាប់វគ្គនេះ (Course Telegram Group Link)</label>
+          <input type="text" id="courseGroupLinkInput" class="form-input" placeholder="https://t.me/+CourseSpecificGroupLink">
+          <p style="color:var(--text-muted); font-size:0.78rem; margin-top:0.35rem;">
+            ⚠️ Link នេះនឹងត្រូវបានផ្ញើជូនសិស្សដែលបានទូទាត់ប្រាក់វគ្គនេះតែប៉ុណ្ណោះ (មិនច្រឡំចូលក្រុមផ្សេងឡើយ)។
+          </p>
+        <div class="form-group" style="display:flex; align-items:center; gap:0.75rem; background:rgba(255,255,255,0.03); padding:0.85rem 1rem; border-radius:var(--radius-md); border:1px solid var(--glass-border); margin-top:1rem;">
+          <input type="checkbox" id="courseIsActiveInput" style="width:20px; height:20px; cursor:pointer;" checked>
+          <label for="courseIsActiveInput" style="cursor:pointer; font-weight:600; color:#fff; font-size:0.95rem; margin:0;">
+            🟢 បើកដំណើការវគ្គសិក្សានេះ (Active Course - Allow Student Registration)
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+          💾 រក្សាទុក (Save Course)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Create / Edit User Account Modal -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal-card">
+      <button class="modal-close" onclick="document.getElementById('userModal').classList.remove('active')">✕</button>
+      <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.25rem;" id="userModalTitle">
+        បង្កើតគណនីថ្មី (New User)
+      </h3>
+
+      <form id="userForm">
+        <input type="hidden" id="userIdInput">
+
+        <div class="form-group">
+          <label class="form-label" for="userUsernameInput">👤 ឈ្មោះគណនី (Username) *</label>
+          <input type="text" id="userUsernameInput" class="form-input" required autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="userPasswordInput">🔒 លេខសម្ងាត់ (Password) <span id="userPasswordHint">*</span></label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="userPasswordInput" class="form-input" autocomplete="new-password" style="flex:1;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="generatePassword()">🎲 បង្កើត</button>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.4rem;" id="userPasswordNote">
+            សូមចម្លងលេខសម្ងាត់នេះផ្ញើទៅសិស្ស — វាមិនអាចមើលឃើញវិញបានទេក្រោយរក្សាទុក។
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="userFullNameInput">📜 ឈ្មោះពេញ (Full Name)</label>
+          <input type="text" id="userFullNameInput" class="form-input">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="userPhoneInput">📞 លេខទូរស័ព្ទ (Phone)</label>
+            <input type="text" id="userPhoneInput" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="userTelegramInput">✈️ Telegram</label>
+            <input type="text" id="userTelegramInput" class="form-input">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="userRoleInput">🛡️ តួនាទី (Role)</label>
+            <select id="userRoleInput" class="form-select">
+              <option value="STUDENT">STUDENT (សិស្ស)</option>
+              <option value="ADMIN">ADMIN (អ្នកគ្រប់គ្រង)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="userActiveInput">✅ ស្ថានភាព (Status)</label>
+            <select id="userActiveInput" class="form-select">
+              <option value="true">Active (ប្រើប្រាស់បាន)</option>
+              <option value="false">Disabled (បិទ)</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+          💾 រក្សាទុកគណនី (Save User)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Receipt Review Modal: Admin checks the payment slip before approving -->
+  <div class="modal-overlay" id="receiptModal">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeReceiptModal()">✕</button>
+      <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.35rem;">
+        🧾 ពិនិត្យវិក័យបត្រ (Review Receipt)
+      </h3>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.25rem;">
+        Invoice: <code id="receiptModalInvoice">—</code> · <strong id="receiptModalAmount">—</strong>
+      </p>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;" id="receiptModalStudent">—</p>
+
+      <div style="text-align:center; background:#0f172a; border:1px solid var(--glass-border); border-radius:var(--radius-md); padding:1rem; margin-bottom:1.25rem;">
+        <img id="receiptModalImg" src="" alt="Payment receipt"
+             style="max-width:100%; max-height:60vh; border-radius:var(--radius-md); display:none;">
+        <p id="receiptModalEmpty" style="color:#94a3b8; padding:2rem 0; display:none;">
+          សិស្សមិនទាន់ Upload វិក័យបត្រទេ (No receipt uploaded yet)
+        </p>
+      </div>
+
+      <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+        <button id="receiptAcceptBtn" class="btn btn-primary" style="flex:1;">✓ អនុម័ត (Accept)</button>
+        <button id="receiptRejectBtn" class="btn btn-outline" style="flex:1; color:#ef4444; border-color:rgba(239,68,68,0.3);">✕ បដិសេធ (Reject)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Student Registration Modal -->
+  <div class="modal-overlay" id="registrationModal">
+    <div class="modal-card">
+      <button class="modal-close" onclick="document.getElementById('registrationModal').classList.remove('active')">✕</button>
+      <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.35rem;">
+        ✏️ កែប្រែព័ត៌មានសិស្ស (Edit Student)
+      </h3>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+        Invoice: <code id="regInvoiceLabel">—</code>
+      </p>
+
+      <form id="registrationForm">
+        <input type="hidden" id="regIdInput">
+
+        <div class="form-group">
+          <label class="form-label" for="regNameInput">👤 ឈ្មោះពេញ (Full Name) *</label>
+          <input type="text" id="regNameInput" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regPhoneInput">📞 លេខទូរស័ព្ទ (Phone Number) *</label>
+          <input type="text" id="regPhoneInput" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regTelegramInput">✈️ ឈ្មោះគណនី Telegram (Username) *</label>
+          <input type="text" id="regTelegramInput" class="form-input" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="regCourseInput">📖 វគ្គសិក្សា (Course)</label>
+            <select id="regCourseInput" class="form-select"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="regCurrencyInput">💵 រូបិយប័ណ្ណ (Currency)</label>
+            <select id="regCurrencyInput" class="form-select">
+              <option value="USD">USD ($)</option>
+              <option value="KHR">KHR (៛)</option>
+            </select>
+          </div>
+        </div>
+
+        <p style="color: var(--text-muted); font-size: 0.78rem; margin-bottom: 0.5rem;">
+          ⚠️ ប្តូរវគ្គសិក្សា ឬរូបិយប័ណ្ណ នឹងគណនាតម្លៃឡើងវិញដោយស្វ័យប្រវត្តិ។
+        </p>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+          💾 រក្សាទុក (Save Student)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/admin.js?v=2.6"></script>
+</body>
+</html>

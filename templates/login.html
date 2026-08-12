@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ចូលគណនី (Login) - MTI Academy</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=2.0">
+</head>
+<body>
+  <main style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1.5rem;">
+    <div style="width:100%; max-width:420px; background:var(--bg-card); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:2.5rem 2rem;">
+
+      <div style="text-align:center; margin-bottom:1.75rem;">
+        <div style="font-size:2.5rem; line-height:1;">🎓</div>
+        <h1 style="font-size:1.5rem; font-weight:800; color:#fff; margin-top:0.75rem;">
+          MTI Academy
+        </h1>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-top:0.35rem;">
+          សូមចូលគណនីរបស់អ្នកដើម្បីបន្ត (Sign in to continue)
+        </p>
+      </div>
+
+      {% if error %}
+      <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.35); color:#fca5a5; border-radius:var(--radius-md); padding:0.85rem 1rem; font-size:0.87rem; margin-bottom:1.25rem;">
+        ⚠️ {{ error }}
+      </div>
+      {% endif %}
+
+      {% if settings.ALLOW_SELF_REGISTER %}
+      <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; border-radius:var(--radius-md); padding:0.85rem 1rem; font-size:0.83rem; margin-bottom:1.25rem; line-height:1.65;">
+        ℹ️ <strong>ប្រើលើកដំបូង?</strong> សូមវាយឈ្មោះគណនី និងលេខសម្ងាត់ដែលអ្នកចង់បាន —
+        ប្រព័ន្ធនឹងរក្សាទុកជូនអ្នកភ្លាមៗ។<br>
+        <strong>លើកក្រោយត្រូវវាយឲ្យដូចដើម</strong> ទើបចូលបាន ដូច្នេះសូមចងចាំវាឲ្យបានល្អ។
+      </div>
+      {% endif %}
+
+      <form method="post" action="/login">
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <div class="form-group">
+          <label class="form-label" for="username">👤 ឈ្មោះគណនី (Username)</label>
+          <input type="text" id="username" name="username" class="form-input" required autofocus autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">🔒 លេខសម្ងាត់ (Password)</label>
+          <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.75rem; padding:0.85rem;">
+          ចូលគណនី (Login) →
+        </button>
+      </form>
+
+      <p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:1.5rem; line-height:1.6;">
+        មិនមានគណនីមែនទេ? សូមទាក់ទង Admin ដើម្បីបង្កើតគណនីជូនអ្នក។<br>
+        <span style="opacity:0.75;">(No account? Ask the Admin to create one for you.)</span>
+      </p>
+    </div>
+  </main>
+</body>
+</html>

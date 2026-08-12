@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KHQR Checkout - Invoice {{ invoice_id }}</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=2.2">
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="/" class="brand">
+      <div class="brand-icon">🎓</div>
+      <span>MTI ACADEMY</span>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-link">← ត្រឡប់ក្រោយ (Back)</a>
+    </div>
+  </nav>
+
+  <main class="container" id="checkoutContainer" data-invoice-id="{{ invoice_id }}" style="max-width: 650px; padding-top: 2rem;">
+
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+      <span class="status-badge status-pending" id="checkoutStatusBadge">
+        <span class="pulse-dot"></span> រង់ចាំការទូទាត់ប្រាក់ (WAITING FOR PAYMENT)
+      </span>
+      <h2 style="font-size: 1.6rem; font-weight: 800; margin-top: 0.75rem; color: #fff;">
+        ទូទាត់ប្រាក់តាម KHQR Code
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Invoice ID: <code style="color: #60a5fa; font-weight: bold;">{{ invoice_id }}</code>
+      </p>
+    </div>
+
+    <!-- STEP 1: Pending - scan KHQR, choose receipt file & upload to send to Admin in one click -->
+    <div id="khqrPendingBox">
+      <div class="khqr-card-wrapper">
+        <div class="khqr-header-banner">
+          <span>KHQR</span>
+        </div>
+
+        <div id="qrCodeWrapper">
+          <img id="khqrImage" src="" alt="Scan KHQR Code" class="khqr-qr-img">
+        </div>
+
+        <div class="khqr-amount-text" id="khqrAmountDisplay">
+          $0.00
+        </div>
+
+        <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 0.5rem; line-height: 1.6;">
+          សូមបើកកម្មវិធីធនាគារ (ABA, ACLEDA, Sathapana, Wing...) រួចស្កែនដើម្បីទូទាត់ប្រាក់។
+        </p>
+      </div>
+
+      <!-- Step 2: Choose receipt file -> Upload & Send to Admin together in 1 click -->
+      <div class="checkout-step-card">
+        <div class="checkout-step-title">🧾 ជំហានទី ២៖ ជ្រើសរើស Upload វិក័យបត្រ រួចផ្ញើទៅ Admin</div>
+        <p class="checkout-step-desc">
+          សូមជ្រើសរើសរូបថត Screenshot នៃវិក័យបត្រទូទាត់ជោគជ័យជាមុនសិន។ នៅពេលចុចប៊ូតុង វិក័យបត្រនឹងត្រូវបាន Upload ទៅកាន់ប្រព័ន្ធ ព្រមទាំងបើក Telegram ផ្ញើជូន Admin តែម្តង!
+        </p>
+
+        <form id="receiptForm">
+          <input type="file" id="receiptFileInput" class="form-input"
+                 accept="image/png,image/jpeg,image/webp,application/pdf" required>
+
+          <div id="receiptChosenName" style="display:none; color:#10b981; font-size:0.85rem; margin-top:0.5rem; font-weight: 600;"></div>
+
+          <!-- Disabled until a file is chosen, so nothing can be sent without proof -->
+          <button type="submit" id="receiptSubmitBtn" class="btn btn-khqr" style="width:100%; margin-top:1rem; padding: 0.9rem;" disabled>
+            ⬆️ ផ្ញើវិក័យបត្រទៅ Admin (Send Receipt to Admin)
+          </button>
+          <p id="receiptHint" class="checkout-step-desc" style="margin-top:0.6rem; font-size:0.8rem; color: #f59e0b;">
+            ⚠️ សូមជ្រើសឯកសារវិក័យបត្រជាមុន ទើបប៊ូតុងដំណើរការ។
+          </p>
+        </form>
+
+        <a id="telegramContactBtn" href="#" target="_blank" style="display:none;"></a>
+        <p class="checkout-step-desc" id="checkoutPhoneLine" style="margin-top:0.75rem;"></p>
+      </div>
+    </div>
+
+    <!-- STEP 2: Submitted - waiting for Admin to accept -->
+    <div id="khqrSubmittedBox" style="display: none; text-align: center; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--radius-lg); padding: 2.5rem;">
+      <div style="font-size: 3.5rem; margin-bottom: 1rem;">⏳</div>
+      <h2 style="color: #f59e0b; font-weight: 800; font-size: 1.5rem; margin-bottom: 0.5rem;">
+        វិក័យបត្រត្រូវបានផ្ញើរួចហើយ! កំពុងរង់ចាំ Admin ត្រួតពិនិត្យ
+      </h2>
+      <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
+        (Receipt submitted — waiting for Admin to review and accept your payment. Link ចូលក្រុមនឹងបង្ហាញនៅទីនេះភ្លាមៗ ពេល Admin អនុម័ត)
+      </p>
+      <img id="submittedReceiptPreview" style="max-width: 220px; border-radius: var(--radius-md); margin-top: 1.5rem; border: 1px solid var(--glass-border);">
+    </div>
+
+    <!-- STEP 3: Rejected -->
+    <div id="khqrRejectedBox" style="display: none; text-align: center; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: var(--radius-lg); padding: 2.5rem;">
+      <div style="font-size: 3.5rem; margin-bottom: 1rem;">⚠️</div>
+      <h2 style="color: #ef4444; font-weight: 800; font-size: 1.5rem; margin-bottom: 0.5rem;">
+        វិក័យបត្រមិនត្រឹមត្រូវ សូម Upload ម្តងទៀត
+      </h2>
+      <p style="color: #cbd5e1; font-size: 0.95rem; margin-bottom: 1.5rem;">
+        (Admin could not verify your receipt. Please upload a clearer screenshot.)
+      </p>
+      <button id="retryUploadBtn" class="btn btn-khqr">⬆️ Upload ម្តងទៀត (Re-upload Receipt)</button>
+    </div>
+
+    <!-- STEP 4: Paid - group link unlocked -->
+    <div id="khqrSuccessBox" style="display: none; text-align: center; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: var(--radius-lg); padding: 2.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+      <div style="font-size: 4rem; margin-bottom: 1rem;">🎉</div>
+      <h2 style="color: #10b981; font-weight: 800; font-size: 1.8rem; margin-bottom: 0.5rem;">
+        Admin បានអនុម័តការបង់ប្រាក់! (PAYMENT ACCEPTED)
+      </h2>
+      <p style="color: #cbd5e1; font-size: 1rem; margin-bottom: 2rem;">
+        សូមអរគុណ! អ្នកអាចចូលរួម Private Group Telegram ឥឡូវនេះបានតាមរយៈ Link ខាងក្រោម៖
+      </p>
+
+      <a id="telegramInviteBtn" href="#" target="_blank" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem; background: linear-gradient(135deg, #0088cc, #005580); border: none;">
+        🚀 ចូលរួម Telegram Group (Join Private Group)
+      </a>
+    </div>
+
+  </main>
+
+  <!-- Floating Bottom-Right Live Chat Widget -->
+  <button id="floatingChatTrigger" class="floating-chat-trigger">
+    💬 Chat ជាមួយ Admin
+    <span id="floatingChatUnread" class="badge-unread" style="display:none;">0</span>
+  </button>
+
+  <div id="floatingChatBox" class="floating-chat-box">
+    <div class="chat-header">
+      <div style="display:flex; align-items:center; gap:0.6rem;">
+        <span style="font-size:1.2rem;">💬</span>
+        <div>
+          <h4 style="font-size:0.95rem; font-weight:700; color:#fff; margin:0;">Live Chat ជាមួយ ADMIN</h4>
+          <div id="adminStatusBadge" class="badge-offline" style="margin-top:0.15rem;">
+            <span class="dot-offline"></span> Admin Offline
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.4rem;">
+        <button id="clearStudentChatHistoryBtn" class="btn btn-outline btn-sm" title="លុបប្រវត្តិឆាត (Clear History)" style="padding:0.2rem 0.5rem; font-size:0.8rem; color:#fca5a5; border-color:rgba(239,68,68,0.4);">🗑️</button>
+        <button id="closeFloatingChatBtn" class="modal-close" style="position:static; width:28px; height:28px;">✕</button>
+      </div>
+    </div>
+
+    <div class="chat-messages-box" id="studentChatMessages">
+      <div style="text-align:center; color:#94a3b8; padding:2rem; font-size:0.85rem;">
+        ⏳ កំពុងទាញយកសារ...
+      </div>
+    </div>
+
+    <form id="studentChatForm" class="chat-input-bar">
+      <input type="text" id="studentChatInput" class="form-input" placeholder="សរសេរសារផ្ញើទៅ Admin..." autocomplete="off" required style="font-size:0.88rem; padding:0.6rem 0.85rem;">
+      <button type="submit" id="studentChatSendBtn" class="btn btn-primary btn-sm" style="padding:0.6rem 1rem;">
+        ផ្ញើ 📤
+      </button>
+    </form>
+  </div>
+
+  <script src="/static/js/student.js?v=2.4"></script>
+</body>
+</html>
