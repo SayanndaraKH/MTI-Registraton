@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -158,7 +159,10 @@ def do_login(
             status_code=401,
         )
 
-    user = db.query(User).filter(User.username == username).first()
+    # Case-insensitive: SQLite compares TEXT as case-sensitive by default, so
+    # without this, "Admin" and "admin" would be treated as different accounts
+    # and typing the wrong case would silently self-register a shadow account.
+    user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
 
     if user is None:
         # First visit: the name is free, so this attempt claims it and becomes

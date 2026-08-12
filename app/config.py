@@ -7,6 +7,11 @@ class Settings(BaseSettings):
     PORT: int = 8000
     HOST: str = "0.0.0.0"
 
+    # SQLite by default for local dev. In production this should point at a
+    # persistent database (e.g. Render PostgreSQL) - a free-tier web service's
+    # local disk is wiped on every deploy and on every idle spin-down/up, so a
+    # local sqlite file there loses all data (including the seeded Admin
+    # account) on every restart.
     DATABASE_URL: str = "sqlite:///./course_sales.db"
 
     # Admin Dashboard login. Students must never be able to reach /admin,

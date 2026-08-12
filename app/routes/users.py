@@ -2,6 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -33,6 +34,17 @@ class UserUpdate(BaseModel):
     telegram_username: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
+
+
+def _validate_role_password(role: str, password: Optional[str]) -> None:
+    """An ADMIN account's password must not be the literal word "admin" -
+    that would make the highest-privilege account guessable from its own role."""
+    if role == "ADMIN" and password and password.strip().lower() == "admin":
+        raise HTTPException(
+            status_code=400,
+            detail='គណនី Admin មិនអាចប្រើលេខសម្ងាត់ថា "admin" បានទេ សូមប្តូរឲ្យខ្លាំងជាងនេះ '
+                   '(An Admin account cannot use "admin" as its password)',
+        )
 
 
 def _serialize(u: User) -> dict:
@@ -77,12 +89,13 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     if not username or not payload.password:
         raise HTTPException(status_code=400, detail="ត្រូវការឈ្មោះគណនី និងលេខសម្ងាត់ (Username and password are required)")
 
-    if db.query(User).filter(User.username == username).first():
+    if db.query(User).filter(func.lower(User.username) == username.lower()).first():
         raise HTTPException(status_code=409, detail="ឈ្មោះគណនីនេះមានរួចហើយ (Username already exists)")
 
     role = payload.role.upper()
     if role not in ("ADMIN", "STUDENT"):
         raise HTTPException(status_code=400, detail="Role must be ADMIN or STUDENT")
+    _validate_role_password(role, payload.password)
 
     user = User(
         username=username,
@@ -109,10 +122,21 @@ def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)
 
     if payload.username is not None:
         new_name = payload.username.strip()
-        clash = db.query(User).filter(User.username == new_name, User.id != user_id).first()
+        clash = db.query(User).filter(func.lower(User.username) == new_name.lower(), User.id != user_id).first()
         if clash:
             raise HTTPException(status_code=409, detail="ឈ្មោះគណនីនេះមានរួចហើយ (Username already exists)")
         user.username = new_name
+
+    # Validate the role/password combination that would result from this
+    # update *before* writing anything, using whichever of the two is being
+    # kept from the existing account.
+    final_role = user.role
+    if payload.role is not None:
+        final_role = payload.role.upper()
+        if final_role not in ("ADMIN", "STUDENT"):
+            raise HTTPException(status_code=400, detail="Role must be ADMIN or STUDENT")
+    final_password = payload.password if payload.password else user.password_plain
+    _validate_role_password(final_role, final_password)
 
     if payload.password:  # blank means "leave the current password alone"
         user.password_hash = hash_password(payload.password)
@@ -126,11 +150,8 @@ def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)
         user.telegram_username = payload.telegram_username.strip().lstrip("@") or None
 
     if payload.role is not None:
-        role = payload.role.upper()
-        if role not in ("ADMIN", "STUDENT"):
-            raise HTTPException(status_code=400, detail="Role must be ADMIN or STUDENT")
-        _guard_last_admin(db, user, new_role=role, new_active=user.is_active)
-        user.role = role
+        _guard_last_admin(db, user, new_role=final_role, new_active=user.is_active)
+        user.role = final_role
 
     if payload.is_active is not None:
         _guard_last_admin(db, user, new_role=user.role, new_active=payload.is_active)

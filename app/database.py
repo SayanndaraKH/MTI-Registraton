@@ -2,9 +2,15 @@ from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.config import settings
 
+# Some providers (Render, Heroku) hand out "postgres://" URLs, but SQLAlchemy's
+# psycopg2 dialect only recognizes "postgresql://".
+_database_url = settings.DATABASE_URL
+if _database_url.startswith("postgres://"):
+    _database_url = _database_url.replace("postgres://", "postgresql://", 1)
+
 engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
+    _database_url,
+    connect_args={"check_same_thread": False} if "sqlite" in _database_url else {}
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
