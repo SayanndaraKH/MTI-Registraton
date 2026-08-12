@@ -135,8 +135,9 @@ def get_public_settings(response: Response, db: Session = Depends(get_db)):
 @app.get("/login", response_class=HTMLResponse)
 def page_login(request: Request, next: str = "/", error: Optional[str] = None):
     return templates.TemplateResponse(
+        request,
         "login.html",
-        {"request": request, "settings": settings, "next": next, "error": error},
+        {"settings": settings, "next": next, "error": error},
     )
 
 @app.post("/login")
@@ -151,8 +152,9 @@ def do_login(
 
     def reject(message: str):
         return templates.TemplateResponse(
+            request,
             "login.html",
-            {"request": request, "settings": settings, "next": next, "error": message},
+            {"settings": settings, "next": next, "error": message},
             status_code=401,
         )
 
@@ -211,8 +213,9 @@ def page_home(request: Request, db: Session = Depends(get_db), user: User = Depe
     """
     all_courses = db.query(Course).order_by(Course.id.desc()).all()
     return templates.TemplateResponse(
+        request,
         "index.html",
-        {"request": request, "courses": all_courses, "settings": settings, "user": user},
+        {"courses": all_courses, "settings": settings, "user": user},
     )
 
 @app.get("/checkout/{invoice_id}", response_class=HTMLResponse)
@@ -223,8 +226,9 @@ def page_checkout(
     user: User = Depends(require_login),
 ):
     return templates.TemplateResponse(
+        request,
         "checkout.html",
-        {"request": request, "invoice_id": invoice_id, "settings": settings, "user": user},
+        {"invoice_id": invoice_id, "settings": settings, "user": user},
     )
 
 @app.get("/register", response_class=HTMLResponse)
@@ -241,14 +245,15 @@ def page_student(
     """
     active_courses = db.query(Course).filter(Course.is_active == True).order_by(Course.id.desc()).all()
     return templates.TemplateResponse(
+        request,
         "index.html",
-        {"request": request, "courses": active_courses, "settings": settings, "user": user},
+        {"courses": active_courses, "settings": settings, "user": user},
     )
 
 @app.get("/admin", response_class=HTMLResponse)
 def page_admin(request: Request, _admin: User = Depends(require_admin)):
     """Admin-only: anyone else is bounced to the login form, never shown the dashboard."""
-    return templates.TemplateResponse("admin.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "admin.html", {"settings": settings})
 
 @app.exception_handler(401)
 @app.exception_handler(403)
