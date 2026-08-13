@@ -592,6 +592,20 @@ async function loadCourses() {
                 ? `<div style="font-size:0.78rem; color:#38bdf8; margin-top:0.35rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(c.telegram_group_link)}">🔗 Group: ${escapeHtml(c.telegram_group_link)}</div>`
                 : `<div style="font-size:0.78rem; color:#94a3b8; margin-top:0.35rem;">🔗 Telegram Group: System Default</div>`;
 
+            const studentBadge = `<div style="display:inline-flex; align-items:center; gap:0.3rem; font-size:0.8rem; font-weight:600; color:#10b981; background:rgba(16,185,129,0.12); padding:0.25rem 0.6rem; border-radius:12px; border:1px solid rgba(16,185,129,0.25); margin-top:0.4rem;">
+                👥 ${c.registered_count || 0} នាក់បានចុះឈ្មោះ
+            </div>`;
+
+            let scheduleHtml = '';
+            if (c.reg_start_date || c.reg_end_date || c.class_start_date || c.class_time) {
+                scheduleHtml = `<div style="font-size:0.78rem; color:#cbd5e1; background:rgba(255,255,255,0.03); padding:0.4rem 0.6rem; border-radius:6px; margin-top:0.5rem; border:1px solid var(--glass-border);">
+                    ${c.reg_start_date ? `<div>📅 បើកទទួល៖ <strong>${escapeHtml(c.reg_start_date)}</strong></div>` : ''}
+                    ${c.reg_end_date ? `<div>⏳ ផុតកំណត់៖ <strong>${escapeHtml(c.reg_end_date)}</strong></div>` : ''}
+                    ${c.class_start_date ? `<div>🎓 ចូលរៀន៖ <strong>${escapeHtml(c.class_start_date)}</strong></div>` : ''}
+                    ${c.class_time ? `<div>⏰ ម៉ោងសិក្សា៖ <strong>${escapeHtml(c.class_time)}</strong></div>` : ''}
+                </div>`;
+            }
+
             card.innerHTML = `
                 ${c.image_url ? `<img src="${escapeHtml(c.image_url)}" alt="${escapeHtml(c.title)}" style="width:100%; height:150px; object-fit:cover; border-radius:var(--radius-md) var(--radius-md) 0 0;">` : ''}
                 <div class="course-body">
@@ -600,9 +614,11 @@ async function loadCourses() {
                         ${statusBadge}
                     </div>
                     <p class="course-desc">${escapeHtml(c.description || '')}</p>
-                    <div style="margin-bottom:0.5rem; font-weight:bold; color:#10b981;">
+                    <div style="margin-bottom:0.3rem; font-weight:bold; color:#10b981;">
                         $${c.price_usd} / ${c.price_khr.toLocaleString()} KHR
                     </div>
+                    ${studentBadge}
+                    ${scheduleHtml}
                     ${groupBadge}
                     <div style="display:flex; gap:0.5rem; margin-top:1rem;">
                         <button onclick="editCourse(${c.id})" class="btn btn-outline btn-sm">✏️ កែប្រែ (Edit)</button>
@@ -670,6 +686,17 @@ function openCourseModal() {
     document.getElementById('courseUsdInput').value = '';
     document.getElementById('courseKhrInput').value = '';
     document.getElementById('courseDurationInput').value = '4 Weeks';
+    const regStart = document.getElementById('courseRegStartInput');
+    if (regStart) regStart.value = '';
+    const regEnd = document.getElementById('courseRegEndInput');
+    if (regEnd) regEnd.value = '';
+    const classStart = document.getElementById('courseClassStartInput');
+    if (classStart) classStart.value = '';
+    const classTime = document.getElementById('courseClassTimeInput');
+    if (classTime) classTime.value = '';
+    const initialCount = document.getElementById('courseInitialCountInput');
+    if (initialCount) initialCount.value = '0';
+
     const groupLinkInput = document.getElementById('courseGroupLinkInput');
     if (groupLinkInput) groupLinkInput.value = '';
     const activeCheck = document.getElementById('courseIsActiveInput');
@@ -689,6 +716,18 @@ async function editCourse(id) {
     document.getElementById('courseUsdInput').value = c.price_usd;
     document.getElementById('courseKhrInput').value = c.price_khr;
     document.getElementById('courseDurationInput').value = c.duration || '4 Weeks';
+
+    const regStart = document.getElementById('courseRegStartInput');
+    if (regStart) regStart.value = c.reg_start_date || '';
+    const regEnd = document.getElementById('courseRegEndInput');
+    if (regEnd) regEnd.value = c.reg_end_date || '';
+    const classStart = document.getElementById('courseClassStartInput');
+    if (classStart) classStart.value = c.class_start_date || '';
+    const classTime = document.getElementById('courseClassTimeInput');
+    if (classTime) classTime.value = c.class_time || '';
+    const initialCount = document.getElementById('courseInitialCountInput');
+    if (initialCount) initialCount.value = c.initial_registered_count || 0;
+
     const groupLinkInput = document.getElementById('courseGroupLinkInput');
     if (groupLinkInput) groupLinkInput.value = c.telegram_group_link || '';
 
@@ -722,12 +761,23 @@ async function handleSaveCourse(e) {
         return alert('សូមបញ្ចូលតម្លៃវគ្គសិក្សាឲ្យបានត្រឹមត្រូវ (Please enter valid prices)');
     }
 
+    const regStart = document.getElementById('courseRegStartInput');
+    const regEnd = document.getElementById('courseRegEndInput');
+    const classStart = document.getElementById('courseClassStartInput');
+    const classTime = document.getElementById('courseClassTimeInput');
+    const initialCount = document.getElementById('courseInitialCountInput');
+
     const payload = {
         title: title,
         description: document.getElementById('courseDescInput').value,
         price_usd: price_usd,
         price_khr: price_khr,
         duration: document.getElementById('courseDurationInput').value,
+        reg_start_date: regStart ? (regStart.value || null) : null,
+        reg_end_date: regEnd ? (regEnd.value || null) : null,
+        class_start_date: classStart ? (classStart.value || null) : null,
+        class_time: classTime ? (classTime.value.trim() || null) : null,
+        initial_registered_count: initialCount ? (parseInt(initialCount.value) || 0) : 0,
         image_url: document.getElementById('courseImageUrlInput').value || null,
         telegram_group_link: groupLinkInput ? (groupLinkInput.value.trim() || null) : null,
         is_active: activeCheck ? activeCheck.checked : true

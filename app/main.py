@@ -81,6 +81,11 @@ def seed_initial_courses(db: Session):
                 duration="4 សប្តាហ៍ (4 Weeks)",
                 features="Python Fundamentals\nTelegram Bot Automation\nFastAPI & Database\nKHQR Payment Integration",
                 image_url="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=60",
+                reg_start_date="2026-08-01",
+                reg_end_date="2026-08-25",
+                class_start_date="2026-09-01",
+                class_time="7:00 PM - 8:30 PM",
+                initial_registered_count=15,
                 is_active=True
             ),
             Course(
@@ -91,6 +96,11 @@ def seed_initial_courses(db: Session):
                 duration="6 សប្តាហ៍ (6 Weeks)",
                 features="FastAPI RESTful APIs\nPostgreSQL & SQLite\nJWT Authentication\nDeployment on Cloud",
                 image_url="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&auto=format&fit=crop&q=60",
+                reg_start_date="2026-08-10",
+                reg_end_date="2026-08-30",
+                class_start_date="2026-09-05",
+                class_time="6:00 PM - 7:30 PM",
+                initial_registered_count=12,
                 is_active=True
             ),
             Course(
@@ -101,6 +111,11 @@ def seed_initial_courses(db: Session):
                 duration="3 សប្តាហ៍ (3 Weeks)",
                 features="Telegram Bot API & Webhooks\nDynamic Invite Link Manager\nAutomated Customer Support\nIntegration with KHQR Payment",
                 image_url="https://images.unsplash.com/photo-1618401471353-b98aedd04e11?w=600&auto=format&fit=crop&q=60",
+                reg_start_date="2026-08-15",
+                reg_end_date="2026-09-05",
+                class_start_date="2026-09-10",
+                class_time="7:30 PM - 9:00 PM",
+                initial_registered_count=8,
                 is_active=True
             )
         ]
@@ -283,6 +298,10 @@ def page_home(request: Request, response: Response, db: Session = Depends(get_db
     """
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     all_courses = db.query(Course).order_by(Course.id.desc()).all()
+    from app.models import Registration
+    for c in all_courses:
+        db_regs = db.query(Registration).filter(Registration.course_id == c.id).count()
+        c.registered_count = (c.initial_registered_count or 0) + db_regs
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -319,6 +338,10 @@ def page_student(
     """
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     all_courses = db.query(Course).order_by(Course.id.desc()).all()
+    from app.models import Registration
+    for c in all_courses:
+        db_regs = db.query(Registration).filter(Registration.course_id == c.id).count()
+        c.registered_count = (c.initial_registered_count or 0) + db_regs
     return templates.TemplateResponse(
         request,
         "index.html",

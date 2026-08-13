@@ -37,6 +37,11 @@ class Course(Base):
     features = Column(Text, nullable=True) # JSON or newline separated text
     image_url = Column(String(500), nullable=True)
     telegram_group_link = Column(String(500), nullable=True)  # Course-specific Telegram group link
+    reg_start_date = Column(String(50), nullable=True)       # Registration Start Date
+    reg_end_date = Column(String(50), nullable=True)         # Registration End Date / Deadline
+    class_start_date = Column(String(50), nullable=True)     # Class Start Date / Start of Study
+    class_time = Column(String(100), nullable=True)          # Class Time / Study Hours (e.g. 7:00 PM - 8:30 PM)
+    initial_registered_count = Column(Integer, default=0)    # Offline/Initial student count set by Admin
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

@@ -11,6 +11,11 @@ class CourseBase(BaseModel):
     features: Optional[str] = None
     image_url: Optional[str] = None
     telegram_group_link: Optional[str] = None
+    reg_start_date: Optional[str] = None
+    reg_end_date: Optional[str] = None
+    class_start_date: Optional[str] = None
+    class_time: Optional[str] = None
+    initial_registered_count: Optional[int] = 0
     is_active: bool = True
 
 class CourseCreate(CourseBase):
@@ -25,10 +30,16 @@ class CourseUpdate(BaseModel):
     features: Optional[str] = None
     image_url: Optional[str] = None
     telegram_group_link: Optional[str] = None
+    reg_start_date: Optional[str] = None
+    reg_end_date: Optional[str] = None
+    class_start_date: Optional[str] = None
+    class_time: Optional[str] = None
+    initial_registered_count: Optional[int] = None
     is_active: Optional[bool] = None
 
 class CourseOut(CourseBase):
     id: int
+    registered_count: Optional[int] = 0
     created_at: datetime
 
     class Config:

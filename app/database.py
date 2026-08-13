@@ -74,11 +74,26 @@ def run_light_migrations():
                 with engine.begin() as conn:
                     conn.execute(text("ALTER TABLE users ADD COLUMN last_seen DATETIME"))
 
-        # Course-specific Telegram Group link
+        # Course-specific Telegram Group link & registration/class dates
         if "courses" in inspector.get_table_names():
             course_columns = {col["name"] for col in inspector.get_columns("courses")}
             if "telegram_group_link" not in course_columns:
                 with engine.begin() as conn:
                     conn.execute(text("ALTER TABLE courses ADD COLUMN telegram_group_link VARCHAR(500)"))
+            if "reg_start_date" not in course_columns:
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE courses ADD COLUMN reg_start_date VARCHAR(50)"))
+            if "reg_end_date" not in course_columns:
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE courses ADD COLUMN reg_end_date VARCHAR(50)"))
+            if "class_start_date" not in course_columns:
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE courses ADD COLUMN class_start_date VARCHAR(50)"))
+            if "class_time" not in course_columns:
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE courses ADD COLUMN class_time VARCHAR(100)"))
+            if "initial_registered_count" not in course_columns:
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE courses ADD COLUMN initial_registered_count INTEGER DEFAULT 0"))
     except Exception as err:
         print(f"Migration notice: {err}")

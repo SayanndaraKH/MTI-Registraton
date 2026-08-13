@@ -324,6 +324,34 @@
           <input type="text" id="courseDurationInput" class="form-input" placeholder="4 Weeks">
         </div>
 
+        <!-- Course Schedule Dates & Time -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem;" class="form-group">
+          <div>
+            <label class="form-label" for="courseRegStartInput">📅 ថ្ងៃបើកទទួល</label>
+            <input type="date" id="courseRegStartInput" class="form-input">
+          </div>
+          <div>
+            <label class="form-label" for="courseRegEndInput">⏳ ថ្ងៃផុតកំណត់</label>
+            <input type="date" id="courseRegEndInput" class="form-input">
+          </div>
+          <div>
+            <label class="form-label" for="courseClassStartInput">🎓 ថ្ងៃចូលរៀន</label>
+            <input type="date" id="courseClassStartInput" class="form-input">
+          </div>
+          <div>
+            <label class="form-label" for="courseClassTimeInput">⏰ ម៉ោងសិក្សា (Time)</label>
+            <input type="text" id="courseClassTimeInput" class="form-input" placeholder="7:00 PM - 8:30 PM">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="courseInitialCountInput">👥 ចំនួនសិស្សចុះឈ្មោះស្រាប់ (Initial/Offline Registered Students Count)</label>
+          <input type="number" id="courseInitialCountInput" class="form-input" min="0" placeholder="0">
+          <p style="color:var(--text-muted); font-size:0.78rem; margin-top:0.35rem;">
+            ចំនួននេះនឹងបូកបញ្ចូលជាមួយចំនួនសិស្សដែលបានចុះឈ្មោះតាមប្រព័ន្ធផ្ទាល់ ដើម្បីបង្ហាញចំនួនសរុបជាក់ស្តែង។
+          </p>
+        </div>
+
         <div class="form-group">
           <label class="form-label" for="courseGroupLinkInput">🔗 Link Group Telegram សម្រាប់វគ្គនេះ (Course Telegram Group Link)</label>
           <input type="text" id="courseGroupLinkInput" class="form-input" placeholder="https://t.me/+CourseSpecificGroupLink">
