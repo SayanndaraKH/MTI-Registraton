@@ -239,58 +239,69 @@ async function copyAccessCode(code) {
 }
 
 async function approveRegistration(regId) {
-    // Warn when approving a student who has not sent any proof of payment yet.
-    try {
-        const detail = await (await fetch(`/api/v1/admin/registrations/${regId}`)).json();
-        if (!detail.receipt_image_url &&
-            !confirm("⚠️ សិស្សនេះមិនទាន់ Upload វិក័យបត្រទេ!\nតើអ្នកនៅតែចង់អនុម័តឬ?\n\n(This student has NOT uploaded a receipt. Approve anyway?)")) return;
-    } catch (e) {
-        console.error(e);
+    const modalBtn = document.getElementById('receiptAcceptBtn');
+    if (modalBtn) {
+        modalBtn.disabled = true;
+        modalBtn.innerText = '⌛ កំពុងអនុម័ត...';
     }
-
-    if (!confirm("តើអ្នកពិតជាចង់អនុម័តការបង់ប្រាក់នេះមែនទេ? Link ក្រុមនឹងផ្ញើទៅសិស្សភ្លាមៗ។ (Accept this payment and unlock the group link?)")) return;
 
     try {
         const res = await fetch(`/api/v1/admin/registrations/${regId}/approve`, { method: 'POST' });
         if (res.ok) {
             closeReceiptModal();
-            // Surface the code straight away: if the student already closed the
-            // app, this is the only way they can reach the group link.
             let codeNote = '';
             try {
-                const detail = await (await fetch(`/api/v1/admin/registrations/${regId}`)).json();
                 const list = await (await fetch('/api/v1/admin/registrations?status_filter=ALL&search=')).json();
                 const row = list.find(x => x.id === regId);
                 if (row && row.access_code) {
-                    codeNote = `\n\n🔑 លេខកូដសម្រាប់សិស្ស: ${row.access_code}\nផ្ញើលេខនេះទៅសិស្សបើគាត់បិទកម្មវិធីរួច។`;
+                    codeNote = `\n\n🔑 លេខកូដសម្រាប់សិស្ស: ${row.access_code}\n(សូមផ្ញើលេខនេះទៅសិស្ស បើគាត់បិទកម្មវិធីរួច)`;
                 }
             } catch (e) { console.error(e); }
 
-            alert(`អនុម័តជោគជ័យ! Telegram Link ត្រូវបានបង្កើត។ (Accepted successfully!)${codeNote}`);
+            showAlert(`បានអនុម័តការបង់ប្រាក់ជោគជ័យ! Telegram Link & Code ត្រូវបានបង្កើត។ (Accepted successfully!)${codeNote}`, "ជោគជ័យ (Success)", "success");
             loadDashboardStats();
             loadRegistrations();
         } else {
-            alert("Approve failed");
+            const data = await res.json().catch(() => ({}));
+            showAlert(`Approve failed: ${data.detail || 'Server error'}`, "Error", "error");
         }
     } catch (e) {
         console.error(e);
+        showAlert("Connection error while approving registration.", "Error", "error");
+    } finally {
+        if (modalBtn) {
+            modalBtn.disabled = false;
+            modalBtn.innerText = '✓ អនុម័ត (Accept)';
+        }
     }
 }
 
 async function rejectRegistration(regId) {
-    if (!confirm("តើអ្នកពិតជាចង់បដិសេធវិក័យបត្រនេះមែនទេ? សិស្សនឹងត្រូវ Upload ម្តងទៀត។ (Reject this receipt?)")) return;
+    const modalBtn = document.getElementById('receiptRejectBtn');
+    if (modalBtn) {
+        modalBtn.disabled = true;
+        modalBtn.innerText = '⌛ កំពុងបដិសេធ...';
+    }
 
     try {
         const res = await fetch(`/api/v1/admin/registrations/${regId}/reject`, { method: 'POST' });
         if (res.ok) {
             closeReceiptModal();
+            showAlert("បានបដិសេធវិក័យបត្រជោគជ័យ សិស្សអាច Upload វិក័យបត្រថ្មីបាន។", "ជោគជ័យ (Success)", "success");
             loadDashboardStats();
             loadRegistrations();
         } else {
-            alert("Reject failed");
+            const data = await res.json().catch(() => ({}));
+            showAlert(`Reject failed: ${data.detail || 'Server error'}`, "Error", "error");
         }
     } catch (e) {
         console.error(e);
+        showAlert("Connection error while rejecting registration.", "Error", "error");
+    } finally {
+        if (modalBtn) {
+            modalBtn.disabled = false;
+            modalBtn.innerText = '✕ បដិសេធ (Reject)';
+        }
     }
 }
 
