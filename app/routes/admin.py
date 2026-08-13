@@ -82,6 +82,7 @@ def get_registrations_list(
             "student_name": r.student_name,
             "phone_number": r.phone_number,
             "telegram_username": r.telegram_username,
+            "course_id": r.course_id,
             "course_title": r.course.title if r.course else "Unknown Course",
             "amount": r.amount,
             "currency": r.currency,

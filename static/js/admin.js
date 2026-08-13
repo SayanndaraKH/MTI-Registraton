@@ -122,6 +122,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('userForm')?.addEventListener('submit', handleSaveUser);
     document.getElementById('userSearchInput')?.addEventListener('input', debounce(loadUsers, 300));
     document.getElementById('courseFileInput')?.addEventListener('change', handleCourseImageUpload);
+    document.getElementById('printStudentListBtn')?.addEventListener('click', openPrintStudentListModal);
+    document.getElementById('printListCourseFilter')?.addEventListener('change', renderStudentListPreview);
+    document.getElementById('printListSortBy')?.addEventListener('change', renderStudentListPreview);
 });
 
 function debounce(func, timeout = 300) {
@@ -856,6 +859,208 @@ function closePrintReceiptModal() {
     if (modal) {
         modal.style.display = 'none';
     }
+}
+
+// ---------- Print Student List (roster by course) ----------
+
+const STATUS_LABELS = {
+    PAID: '✓ បានបង់ (PAID)',
+    SUBMITTED: '🧾 រង់ចាំពិនិត្យ (SUBMITTED)',
+    REJECTED: '✕ បដិសេធ (REJECTED)',
+    PENDING: '⏳ មិនទាន់បង់ (PENDING)'
+};
+const STATUS_SORT_ORDER = { PAID: 0, SUBMITTED: 1, PENDING: 2, REJECTED: 3 };
+
+async function openPrintStudentListModal() {
+    try {
+        const [regsRes, coursesRes] = await Promise.all([
+            fetch('/api/v1/admin/registrations?status_filter=ALL&search='),
+            fetch('/api/v1/courses?active_only=false')
+        ]);
+        window.printListRegistrations = regsRes.ok ? await regsRes.json() : [];
+        window.printListCourses = coursesRes.ok ? await coursesRes.json() : [];
+    } catch (e) {
+        console.error('Failed loading student list data:', e);
+        return alert('មិនអាចទាញយកទិន្នន័យសិស្សបានទេ (Failed to load student data)');
+    }
+
+    const courseSelect = document.getElementById('printListCourseFilter');
+    if (courseSelect) {
+        courseSelect.innerHTML = '<option value="ALL">🗂️ គ្រប់វគ្គទាំងអស់ (All Courses Combined)</option>';
+        window.printListCourses.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.title;
+            courseSelect.appendChild(opt);
+        });
+    }
+
+    renderStudentListPreview();
+    document.getElementById('printStudentListModal')?.classList.add('active');
+}
+
+function closePrintStudentListModal() {
+    document.getElementById('printStudentListModal')?.classList.remove('active');
+}
+
+function sortRegistrations(regs, sortBy) {
+    const sorted = [...regs];
+    switch (sortBy) {
+        case 'name_asc':
+            sorted.sort((a, b) => (a.student_name || '').localeCompare(b.student_name || ''));
+            break;
+        case 'status':
+            sorted.sort((a, b) => (STATUS_SORT_ORDER[a.status] ?? 9) - (STATUS_SORT_ORDER[b.status] ?? 9));
+            break;
+        case 'amount_desc':
+            sorted.sort((a, b) => (parseFloat(b.amount) || 0) - (parseFloat(a.amount) || 0));
+            break;
+        case 'date_asc':
+            sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            break;
+        case 'date_desc':
+        default:
+            sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            break;
+    }
+    return sorted;
+}
+
+function buildStudentListTable(title, regs) {
+    const paidCount = regs.filter(r => r.status === 'PAID').length;
+    const rows = regs.map((r, idx) => {
+        const tg = r.telegram_username ? '@' + escapeHtml(r.telegram_username.replace('@', '')) : '—';
+        const dateStr = r.created_at ? String(r.created_at).split(' ')[0] : '—';
+        return `
+            <tr>
+                <td style="text-align:center;">${idx + 1}</td>
+                <td>${escapeHtml(r.invoice_id || '')}</td>
+                <td><strong>${escapeHtml(r.student_name || '—')}</strong></td>
+                <td>${escapeHtml(r.phone_number || '—')}</td>
+                <td>${tg}</td>
+                <td style="text-align:right; white-space:nowrap;">${r.amount} ${r.currency}</td>
+                <td>${STATUS_LABELS[r.status] || r.status}</td>
+                <td style="white-space:nowrap;">${dateStr}</td>
+            </tr>`;
+    }).join('');
+
+    return `
+        <div class="student-list-group" style="margin-bottom:1.75rem;">
+            <h4 style="color:#fff; font-size:1.05rem; font-weight:700; margin:0 0 0.6rem 0; display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:0.5rem;">
+                <span>📖 ${escapeHtml(title)}</span>
+                <span style="font-size:0.8rem; font-weight:500; color:#94a3b8;">សរុប ${regs.length} នាក់ · បានបង់ ${paidCount} នាក់</span>
+            </h4>
+            <table class="data-table" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th style="width:40px; text-align:center;">ល.រ</th>
+                        <th>Invoice ID</th>
+                        <th>ឈ្មោះសិស្ស</th>
+                        <th>លេខទូរស័ព្ទ</th>
+                        <th>Telegram</th>
+                        <th style="text-align:right;">តម្លៃ</th>
+                        <th>ស្ថានភាព</th>
+                        <th>កាលបរិច្ឆេទ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows || `<tr><td colspan="8" style="text-align:center; color:#94a3b8; padding:1.5rem;">ពុំមានសិស្សក្នុងវគ្គនេះទេ</td></tr>`}
+                </tbody>
+            </table>
+        </div>`;
+}
+
+function getStudentListHtml() {
+    const courseFilter = document.getElementById('printListCourseFilter')?.value || 'ALL';
+    const sortBy = document.getElementById('printListSortBy')?.value || 'date_desc';
+    const allRegs = window.printListRegistrations || [];
+    const courses = window.printListCourses || [];
+
+    if (courseFilter !== 'ALL') {
+        const course = courses.find(c => String(c.id) === String(courseFilter));
+        const regs = sortRegistrations(allRegs.filter(r => String(r.course_id) === String(courseFilter)), sortBy);
+        return buildStudentListTable(course ? course.title : 'វគ្គសិក្សា', regs);
+    }
+
+    // All courses combined: one group per course, in the order courses were created, then any orphaned rows last.
+    let html = '';
+    courses.forEach(c => {
+        const regs = sortRegistrations(allRegs.filter(r => String(r.course_id) === String(c.id)), sortBy);
+        if (regs.length > 0) {
+            html += buildStudentListTable(c.title, regs);
+        }
+    });
+    const orphaned = sortRegistrations(allRegs.filter(r => !courses.some(c => String(c.id) === String(r.course_id))), sortBy);
+    if (orphaned.length > 0) {
+        html += buildStudentListTable('វគ្គសិក្សាផ្សេងទៀត (Unknown Course)', orphaned);
+    }
+    return html || `<p style="text-align:center; color:#94a3b8; padding:2rem;">ពុំមានទិន្នន័យសិស្សទេ (No students found)</p>`;
+}
+
+function renderStudentListPreview() {
+    const container = document.getElementById('studentListPreviewArea');
+    if (container) container.innerHTML = getStudentListHtml();
+}
+
+function triggerStudentListPrint() {
+    const courseFilter = document.getElementById('printListCourseFilter');
+    const courseLabel = courseFilter?.selectedOptions[0]?.textContent || 'គ្រប់វគ្គទាំងអស់';
+    const bodyHtml = getStudentListHtml();
+    const todayStr = new Date().toLocaleDateString('km-KH', { year: 'numeric', month: 'short', day: 'numeric' });
+
+    const printWindow = window.open('', '_blank', 'width=1000,height=1200');
+    if (!printWindow) {
+        return alert('សូមអនុញ្ញាត Popup សម្រាប់គេហទំព័រនេះ ដើម្បីបោះពុម្ព (Please allow popups to print)');
+    }
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="km">
+        <head>
+            <meta charset="UTF-8">
+            <title>Student List - MTI Academy</title>
+            <link rel="stylesheet" href="/static/css/style.css?v=7.0">
+            <style>
+                body {
+                    background: #ffffff !important;
+                    color: #1e293b !important;
+                    padding: 1.5rem !important;
+                    font-family: 'Inter', 'Kantumruy Pro', 'Khmer OS Battambang', sans-serif;
+                }
+                .print-list-header { display:flex; align-items:center; gap:0.85rem; border-bottom:2px solid #1e293b; padding-bottom:1rem; margin-bottom:1.5rem; }
+                .print-list-header img { width:52px; height:52px; border-radius:50%; object-fit:cover; }
+                .print-list-header h2 { margin:0; font-size:1.3rem; color:#1e293b; }
+                .print-list-header p { margin:0.2rem 0 0 0; font-size:0.85rem; color:#475569; }
+                .student-list-group h4 { color: #1e293b !important; }
+                .student-list-group h4 span:last-child { color: #475569 !important; }
+                .data-table { border-collapse: collapse; }
+                .data-table th, .data-table td { border: 1px solid #cbd5e1 !important; color: #1e293b !important; padding: 0.5rem 0.6rem !important; font-size: 0.85rem; }
+                .data-table th { background: #f1f5f9 !important; }
+                .data-table tr:hover td { background: transparent !important; }
+                @media print {
+                    body { padding: 0 !important; }
+                    .student-list-group { page-break-inside: avoid; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-list-header">
+                <img src="/static/uploads/mti_logo.png" alt="MTI Logo">
+                <div>
+                    <h2>បញ្ជីឈ្មោះសិស្សចុះឈ្មោះ — ${escapeHtml(courseLabel)}</h2>
+                    <p>MTI Academy · បោះពុម្ពនៅថ្ងៃទី ${todayStr}</p>
+                </div>
+            </div>
+            ${bodyHtml}
+            <script>
+                window.onload = function() {
+                    setTimeout(function() { window.print(); }, 350);
+                };
+            </scr` + `ipt>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
 
 // ---------- Edit / delete a student registration ----------

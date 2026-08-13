@@ -87,6 +87,9 @@
             <option value="SUBMITTED">🧾 Submitted (បានផ្ញើវិក័យបត្រ)</option>
             <option value="PENDING">⏳ Pending (មិនទាន់បង់)</option>
           </select>
+          <button id="printStudentListBtn" class="btn btn-outline btn-sm" style="color:#10b981; border-color:rgba(16,185,129,0.4);">
+            🖨️ បោះពុម្ពបញ្ជីសិស្ស (Print List)
+          </button>
         </div>
       </div>
 
@@ -702,6 +705,48 @@
     </div>
   </div>
 
-  <script src="/static/js/admin.js?v=6.0"></script>
+  <!-- Print Student List Modal: roster of all students, filterable by course & sortable -->
+  <div id="printStudentListModal" class="modal-overlay" style="align-items:center; justify-content:center; padding:1rem; z-index:99999;">
+    <div class="modal-card" style="width:100%; max-width:1000px; max-height:94vh; display:flex; flex-direction:column; padding:0; overflow:hidden;">
+
+      <!-- Header (Non-printable) -->
+      <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.75rem; background:rgba(255,255,255,0.05); border-bottom:1px solid var(--glass-border); flex-wrap:wrap; gap:0.75rem;">
+        <h3 style="font-size:1.15rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:0.5rem; margin:0;">
+          🖨️ បោះពុម្ពបញ្ជីឈ្មោះសិស្ស (Print Student List)
+        </h3>
+        <button onclick="closePrintStudentListModal()" class="btn btn-outline btn-sm" style="padding:0.45rem 0.9rem;">✕ បិទ (Close)</button>
+      </div>
+
+      <!-- Controls (Non-printable) -->
+      <div class="no-print" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:flex-end; padding:1.25rem 1.75rem; border-bottom:1px solid var(--glass-border);">
+        <div style="flex:1; min-width:200px;">
+          <label class="form-label" for="printListCourseFilter">📖 វគ្គសិក្សា (Course)</label>
+          <select id="printListCourseFilter" class="form-select" style="width:100%;">
+            <option value="ALL">🗂️ គ្រប់វគ្គទាំងអស់ (All Courses Combined)</option>
+          </select>
+        </div>
+        <div style="flex:1; min-width:200px;">
+          <label class="form-label" for="printListSortBy">↕️ តម្រៀបតាម (Sort By)</label>
+          <select id="printListSortBy" class="form-select" style="width:100%;">
+            <option value="date_desc">កាលបរិច្ឆេទ (ថ្មីទៅចាស់)</option>
+            <option value="date_asc">កាលបរិច្ឆេទ (ចាស់ទៅថ្មី)</option>
+            <option value="name_asc">ឈ្មោះសិស្ស (A-Z)</option>
+            <option value="status">ស្ថានភាព (Status)</option>
+            <option value="amount_desc">តម្លៃ (ខ្ពស់ទៅទាប)</option>
+          </select>
+        </div>
+        <button onclick="triggerStudentListPrint()" class="btn btn-primary btn-sm" style="padding:0.6rem 1.35rem; font-weight:bold; background:linear-gradient(135deg, #10b981, #059669); border:none; white-space:nowrap;">
+          🖨️ បោះពុម្ព (Print)
+        </button>
+      </div>
+
+      <!-- Preview Area -->
+      <div style="overflow-y:auto; padding:1.5rem 1.75rem; background:#0f172a;">
+        <div id="studentListPreviewArea"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/admin.js?v=7.0"></script>
 </body>
 </html>
