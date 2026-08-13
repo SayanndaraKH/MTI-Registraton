@@ -671,7 +671,59 @@ function openPrintReceiptModal(regId) {
 }
 
 function triggerReceiptPrint() {
-    window.print();
+    const sheetEl = document.getElementById('officialReceiptSheet');
+    if (!sheetEl) {
+        window.print();
+        return;
+    }
+
+    const htmlContent = sheetEl.outerHTML;
+    const printWindow = window.open('', '_blank', 'width=880,height=1050');
+    if (!printWindow) {
+        // Fallback if browser popup blocker is active
+        window.print();
+        return;
+    }
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="km">
+        <head>
+            <meta charset="UTF-8">
+            <title>Official Tuition Receipt - MTI Academy</title>
+            <link rel="stylesheet" href="/static/css/style.css?v=4.0">
+            <style>
+                body {
+                    background: #ffffff !important;
+                    color: #1e293b !important;
+                    padding: 1.5rem !important;
+                    font-family: 'Inter', 'Kantumruy Pro', 'Khmer OS Battambang', sans-serif;
+                }
+                .receipt-sheet {
+                    box-shadow: none !important;
+                    border: 1px solid #cbd5e1 !important;
+                    margin: 0 auto !important;
+                    max-width: 780px !important;
+                }
+                @media print {
+                    body { padding: 0 !important; }
+                    .receipt-sheet { border: none !important; }
+                }
+            </style>
+        </head>
+        <body>
+            ${htmlContent}
+            <script>
+                window.onload = function() {
+                    setTimeout(function() {
+                        window.print();
+                    }, 350);
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
 
 function closePrintReceiptModal() {

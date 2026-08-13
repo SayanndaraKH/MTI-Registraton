@@ -1062,44 +1062,41 @@ body {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  body {
+    background: #ffffff !important;
+    color: #1e293b !important;
   }
-  #printReceiptModal, #printReceiptModal * {
-    visibility: visible;
+  .navbar, .admin-container, .modal-overlay:not(#printReceiptModal), .no-print {
+    display: none !important;
   }
   #printReceiptModal {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
     background: #ffffff !important;
     display: block !important;
     padding: 0 !important;
     margin: 0 !important;
-    z-index: 9999999 !important;
+    z-index: 1 !important;
   }
   .modal-card {
     max-width: 100% !important;
     width: 100% !important;
-    height: 100% !important;
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;
     padding: 0 !important;
-  }
-  .no-print {
-    display: none !important;
+    margin: 0 !important;
   }
   #printableReceiptArea {
     padding: 0 !important;
     background: #ffffff !important;
+    overflow: visible !important;
   }
   .receipt-sheet {
     box-shadow: none !important;
     border: none !important;
-    padding: 1.5rem !important;
+    padding: 1rem !important;
     border-radius: 0 !important;
   }
 }
