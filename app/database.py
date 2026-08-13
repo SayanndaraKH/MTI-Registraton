@@ -68,20 +68,35 @@ def run_light_migrations():
         if "users" in inspector.get_table_names():
             user_columns = {col["name"] for col in inspector.get_columns("users")}
             if "password_plain" not in user_columns:
-                with engine.begin() as conn:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN password_plain VARCHAR(255)"))
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN password_plain VARCHAR(255)"))
+                except Exception as e:
+                    print(f"Migration notice: {e}")
             if "last_seen" not in user_columns:
-                with engine.begin() as conn:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN last_seen DATETIME"))
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN last_seen TIMESTAMP"))
+                except Exception as e:
+                    print(f"Migration notice: {e}")
             if "email" not in user_columns:
-                with engine.begin() as conn:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR(255)"))
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR(255)"))
+                except Exception as e:
+                    print(f"Migration notice: {e}")
             if "failed_attempts" not in user_columns:
-                with engine.begin() as conn:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN failed_attempts INTEGER DEFAULT 0"))
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN failed_attempts INTEGER DEFAULT 0"))
+                except Exception as e:
+                    print(f"Migration notice: {e}")
             if "lockout_until" not in user_columns:
-                with engine.begin() as conn:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN lockout_until DATETIME"))
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN lockout_until TIMESTAMP"))
+                except Exception as e:
+                    print(f"Migration notice: {e}")
 
         # Course-specific Telegram Group link & registration/class dates
         if "courses" in inspector.get_table_names():
