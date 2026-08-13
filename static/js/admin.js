@@ -668,6 +668,14 @@ async function openPrintReceiptModal(regId) {
     const rcpStatus = document.getElementById('rcpStatus');
     if (rcpStatus) rcpStatus.innerText = r.status === 'PAID' ? '✓ បានទូទាត់ប្រាក់រួច (PAID)' : ('' + r.status);
 
+    // Populate Admin Contact Phone
+    const rcpAdminPhone = document.getElementById('rcpAdminPhone');
+    if (rcpAdminPhone) {
+        const phoneInput = document.getElementById('settingContactPhone');
+        const phoneVal = (phoneInput && phoneInput.value) ? phoneInput.value : '092 800 104';
+        rcpAdminPhone.innerText = phoneVal;
+    }
+
     // Populate Student Info
     const rcpStudentName = document.getElementById('rcpStudentName');
     if (rcpStudentName) rcpStudentName.innerText = r.student_name || '—';
