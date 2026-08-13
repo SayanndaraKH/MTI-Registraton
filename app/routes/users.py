@@ -173,7 +173,15 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     _guard_last_admin(db, user, new_role="STUDENT", new_active=False)
 
     # Keep the student's paid history; just unlink it from the deleted account.
-    db.query(Registration).filter(Registration.user_id == user.id).update({"user_id": None})
+    db.query(Registration).filter(Registration.user_id == user.id).update({"user_id": None}, synchronize_session=False)
+
+    # Clean up any chat messages tied to this user to prevent foreign key constraint violations
+    from app.models import ChatMessage
+    db.query(ChatMessage).filter(
+        (ChatMessage.sender_id == user.id) |
+        (ChatMessage.receiver_id == user.id) |
+        (ChatMessage.student_user_id == user.id)
+    ).delete(synchronize_session=False)
 
     username = user.username
     db.delete(user)
