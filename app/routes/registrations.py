@@ -261,6 +261,31 @@ def process_receipt_image_to_b64(file_bytes: bytes, content_type: str = "image/j
     mime = content_type or "image/jpeg"
     return f"data:{mime};base64,{b64_data}"
 
+RECEIPT_ACCEPTED_DIR = os.path.join(RECEIPT_UPLOAD_DIR, "accepted")
+
+def save_accepted_receipt_locally(invoice_id: str, data_uri: str) -> None:
+    """
+    Best-effort local disk copy of an accepted receipt, written alongside the
+    Base64 copy already stored in the database. On hosts with an ephemeral
+    filesystem (e.g. Render's free plan without a persistent disk) this file
+    will not survive a restart - the database column remains the source of
+    truth the app actually displays from, so a lost local copy never breaks
+    the receipt view.
+    """
+    if not data_uri or not data_uri.startswith("data:") or "," not in data_uri:
+        return
+    try:
+        header, b64_data = data_uri.split(",", 1)
+        mime = header.split(";")[0].replace("data:", "") or "image/jpeg"
+        subtype = mime.split("/")[-1] if "/" in mime else "jpg"
+        ext = ".jpg" if subtype == "jpeg" else f".{subtype}"
+        os.makedirs(RECEIPT_ACCEPTED_DIR, exist_ok=True)
+        dest_path = os.path.join(RECEIPT_ACCEPTED_DIR, f"{invoice_id}{ext}")
+        with open(dest_path, "wb") as f:
+            f.write(base64.b64decode(b64_data))
+    except Exception as e:
+        print(f"Local receipt backup skipped for {invoice_id}: {e}")
+
 @router.post("/{invoice_id}/receipt")
 async def upload_receipt(
     invoice_id: str,

@@ -194,6 +194,10 @@ def accept_registration(reg_id: int, db: Session = Depends(get_db)):
 
     process_successful_payment(db=db, registration=reg, transaction_ref="MANUAL_ADMIN_ACCEPT")
 
+    if reg.receipt_image_url:
+        from app.routes.registrations import save_accepted_receipt_locally
+        save_accepted_receipt_locally(reg.invoice_id, reg.receipt_image_url)
+
     return {"message": "Registration accepted & Telegram group link issued", "status": "PAID"}
 
 @router.post("/registrations/{reg_id}/reject")
@@ -238,11 +242,12 @@ async def admin_upload_student_receipt(
     with open(save_path, "wb") as f:
         f.write(contents)
 
-    from app.routes.registrations import process_receipt_image_to_b64
+    from app.routes.registrations import process_receipt_image_to_b64, save_accepted_receipt_locally
     reg.receipt_image_url = process_receipt_image_to_b64(contents, file.content_type)
 
     # Auto approve and process payment (marks status PAID, issues access code & group link)
     process_successful_payment(db=db, registration=reg, transaction_ref="MANUAL_ADMIN_UPLOAD")
+    save_accepted_receipt_locally(reg.invoice_id, reg.receipt_image_url)
 
     db.commit()
     db.refresh(reg)
