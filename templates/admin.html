@@ -430,9 +430,25 @@
         </p>
       </div>
 
-      <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+      <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1rem;">
         <button id="receiptAcceptBtn" class="btn btn-primary" style="flex:1;">✓ អនុម័ត (Accept)</button>
         <button id="receiptRejectBtn" class="btn btn-outline" style="flex:1; color:#ef4444; border-color:rgba(239,68,68,0.3);">✕ បដិសេធ (Reject)</button>
+      </div>
+
+      <!-- Admin Upload Receipt Section -->
+      <div id="adminReceiptUploadSection" style="padding-top: 1rem; border-top: 1px dashed var(--glass-border); text-align: left;">
+        <label style="display:block; font-size:0.85rem; color:#10b981; margin-bottom:0.4rem; font-weight:600;">
+          📤 Admin Upload វិក័យបត្រជំនួសសិស្ស (Upload Receipt for Student):
+        </label>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:0.6rem;">
+          ករណីសិស្សភ្លេច Upload វិក័យបត្រ លោកអ្នកអាចជ្រើសរើសរូបភាព Upload ជំនួសដើម្បីបញ្ចប់ការទូទាត់ ១០០%៖
+        </p>
+        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+          <input type="file" id="adminReceiptFileInput" class="form-input" accept="image/*,.pdf" style="flex:1; font-size:0.82rem; padding:0.45rem;">
+          <button type="button" id="adminUploadReceiptBtn" class="btn btn-primary btn-sm" style="white-space:nowrap; padding:0.6rem 1rem;">
+            📤 Upload & Accept
+          </button>
+        </div>
       </div>
     </div>
   </div>

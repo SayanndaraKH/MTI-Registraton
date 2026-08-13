@@ -210,6 +210,47 @@ def reject_registration(reg_id: int, db: Session = Depends(get_db)):
 
     return {"message": "Registration rejected. Student can re-upload a receipt.", "status": "REJECTED"}
 
+@router.post("/registrations/{reg_id}/receipt")
+async def admin_upload_student_receipt(
+    reg_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """
+    Admin uploads a payment receipt image on behalf of a student.
+    Saves the file, updates receipt_image_url, and automatically approves the registration.
+    """
+    reg = db.query(Registration).filter(Registration.id == reg_id).first()
+    if not reg:
+        raise HTTPException(status_code=404, detail="Registration not found")
+
+    filename = file.filename or "receipt.jpg"
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp", ".pdf"]:
+        raise HTTPException(status_code=400, detail="Only JPG, PNG, WEBP or PDF receipt files are accepted")
+
+    safe_name = f"admin_receipt_{reg.id}_{uuid.uuid4().hex[:8]}{ext}"
+    save_path = os.path.join(RECEIPT_UPLOAD_DIR, safe_name)
+    os.makedirs(RECEIPT_UPLOAD_DIR, exist_ok=True)
+
+    contents = await file.read()
+    with open(save_path, "wb") as f:
+        f.write(contents)
+
+    reg.receipt_image_url = f"/static/uploads/receipts/{safe_name}"
+
+    # Auto approve and process payment (marks status PAID, issues access code & group link)
+    process_successful_payment(db=db, registration=reg, transaction_ref="MANUAL_ADMIN_UPLOAD")
+
+    db.commit()
+    db.refresh(reg)
+
+    return {
+        "message": "Receipt uploaded & registration approved successfully",
+        "status": reg.status,
+        "receipt_image_url": reg.receipt_image_url,
+    }
+
 @router.get("/settings")
 def get_system_settings(db: Session = Depends(get_db)):
     db_settings = db.query(SystemSetting).all()

@@ -75,10 +75,10 @@ async function loadRegistrations() {
             const tr = document.createElement('tr');
             const statusBadge = statusBadges[r.status] || statusBadges.PENDING;
 
-            // Opens the receipt full size so Admin can check the slip before approving.
+            // Opens the receipt full size or allows Admin to upload a slip on behalf of student.
             const receiptCell = r.receipt_image_url
                 ? `<button onclick="openReceiptModal(${r.id})" class="btn btn-outline btn-sm">🧾 មើល (View)</button>`
-                : `<span style="color:#64748b; font-size:0.8rem;">—</span>`;
+                : `<button onclick="openReceiptModal(${r.id})" class="btn btn-outline btn-sm" style="color:#10b981; border-color:rgba(16,185,129,0.35);">📤 Upload</button>`;
 
             let actionBtnsHtml = '';
             if (r.status === 'PAID' && r.invite_link) {
@@ -396,6 +396,16 @@ async function openReceiptModal(regId) {
             empty.style.display = 'block';
         }
 
+        // Reset Admin Upload File Input
+        const fileInput = document.getElementById('adminReceiptFileInput');
+        if (fileInput) fileInput.value = '';
+
+        const uploadBtn = document.getElementById('adminUploadReceiptBtn');
+        if (uploadBtn) {
+            uploadBtn.onclick = () => handleAdminUploadReceipt(regId);
+            uploadBtn.style.display = r.status === 'PAID' ? 'none' : 'inline-flex';
+        }
+
         // Approve/reject straight from the preview, so the slip is always seen first.
         document.getElementById('receiptAcceptBtn').onclick = () => approveRegistration(regId);
         document.getElementById('receiptRejectBtn').onclick = () => rejectRegistration(regId);
@@ -405,6 +415,62 @@ async function openReceiptModal(regId) {
         document.getElementById('receiptModal').classList.add('active');
     } catch (e) {
         console.error(e);
+    }
+}
+
+async function handleAdminUploadReceipt(regId) {
+    const fileInput = document.getElementById('adminReceiptFileInput');
+    if (!fileInput || !fileInput.files.length) {
+        return alert('សូមជ្រើសរើសរូបភាព ឬឯកសារវិក័យបត្រជាមុនសិន! (Please select a receipt image file first)');
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    const uploadBtn = document.getElementById('adminUploadReceiptBtn');
+    if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.innerText = '⏳ កំពុង Upload...';
+    }
+
+    try {
+        const res = await fetch(`/api/v1/admin/registrations/${regId}/receipt`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await res.json();
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.innerText = '📤 Upload & Accept';
+        }
+
+        if (res.ok) {
+            let codeNote = '';
+            if (data.status === 'PAID') {
+                try {
+                    const list = await (await fetch('/api/v1/admin/registrations?status_filter=ALL&search=')).json();
+                    const row = list.find(x => x.id === regId);
+                    if (row && row.access_code) {
+                        codeNote = `\n\n🔑 លេខកូដសម្រាប់សិស្ស: ${row.access_code}\nសូមចម្លងផ្ញើទៅសិស្សតាម Telegram។`;
+                    }
+                } catch (err) { console.error(err); }
+            }
+
+            alert(`បាន Upload វិក័យបត្រ និងអនុម័តការបង់ប្រាក់ជោគជ័យ ១០០%! (Receipt uploaded & approved successfully!)${codeNote}`);
+            closeReceiptModal();
+            loadDashboardStats();
+            loadRegistrations();
+        } else {
+            alert(`Upload បរាជ័យ: ${data.detail || 'Unknown error'}`);
+        }
+    } catch (e) {
+        console.error(e);
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.innerText = '📤 Upload & Accept';
+        }
+        alert('មានបញ្ហាក្នុងការ Upload វិក័យបត្រ');
     }
 }
 
