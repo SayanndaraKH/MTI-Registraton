@@ -44,18 +44,23 @@ def run_light_migrations():
     """
     try:
         inspector = inspect(engine)
-        if "registrations" not in inspector.get_table_names():
-            return
+        table_names = inspector.get_table_names()
 
-        existing_columns = {col["name"] for col in inspector.get_columns("registrations")}
-        if "receipt_image_url" not in existing_columns:
-            with engine.begin() as conn:
-                conn.execute(text("ALTER TABLE registrations ADD COLUMN receipt_image_url VARCHAR(500)"))
-
-        # Links a registration to the student account that created it.
-        if "user_id" not in existing_columns:
-            with engine.begin() as conn:
-                conn.execute(text("ALTER TABLE registrations ADD COLUMN user_id INTEGER"))
+        # Registrations table migrations
+        if "registrations" in table_names:
+            existing_columns = {col["name"] for col in inspector.get_columns("registrations")}
+            if "receipt_image_url" not in existing_columns:
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE registrations ADD COLUMN receipt_image_url VARCHAR(500)"))
+                except Exception as e:
+                    print(f"Migration notice: {e}")
+            if "user_id" not in existing_columns:
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE registrations ADD COLUMN user_id INTEGER"))
+                except Exception as e:
+                    print(f"Migration notice: {e}")
 
         # One-time code a student types to unlock the group link after being offline.
         if "telegram_invites" in inspector.get_table_names():
