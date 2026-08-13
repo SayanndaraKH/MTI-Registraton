@@ -522,14 +522,21 @@ async function openReceiptModal(regId) {
             empty.innerHTML = `<div style="font-size:2rem; margin-bottom:0.5rem;">🧾</div><div>មិនទាន់មានរូបភាពវិក័យបត្រទេ (No receipt image uploaded)</div>`;
         }
 
-        // Reset Admin Upload File Input
+        // Reset Admin Upload File Input & Attach Auto Upload Handler
         const fileInput = document.getElementById('adminReceiptFileInput');
-        if (fileInput) fileInput.value = '';
+        if (fileInput) {
+            fileInput.value = '';
+            fileInput.onchange = () => {
+                if (fileInput.files && fileInput.files.length > 0) {
+                    handleAdminUploadReceipt(regId);
+                }
+            };
+        }
 
         const uploadBtn = document.getElementById('adminUploadReceiptBtn');
         if (uploadBtn) {
             uploadBtn.onclick = () => handleAdminUploadReceipt(regId);
-            uploadBtn.style.display = r.status === 'PAID' ? 'none' : 'inline-flex';
+            uploadBtn.style.display = 'inline-flex';
         }
 
         window.currentReceiptId = regId;
@@ -573,10 +580,23 @@ async function handleAdminUploadReceipt(regId) {
         const data = await res.json();
         if (uploadBtn) {
             uploadBtn.disabled = false;
-            uploadBtn.innerText = '📤 Upload & Accept';
+            uploadBtn.innerText = '📤 Upload ថ្មី';
         }
 
         if (res.ok) {
+            // Live update modal image preview instantly
+            if (data.receipt_image_url) {
+                const modalImg = document.getElementById('receiptModalImg');
+                const modalEmpty = document.getElementById('receiptModalEmpty');
+                if (modalImg) {
+                    modalImg.src = data.receipt_image_url + (data.receipt_image_url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                    modalImg.style.display = 'block';
+                }
+                if (modalEmpty) {
+                    modalEmpty.style.display = 'none';
+                }
+            }
+
             let codeNote = '';
             if (data.status === 'PAID') {
                 try {
@@ -588,8 +608,7 @@ async function handleAdminUploadReceipt(regId) {
                 } catch (err) { console.error(err); }
             }
 
-            alert(`បាន Upload វិក័យបត្រ និងអនុម័តការបង់ប្រាក់ជោគជ័យ ១០០%! (Receipt uploaded & approved successfully!)${codeNote}`);
-            closeReceiptModal();
+            alert(`✅ បាន Upload និងជំនួសរូបភាពវិក័យបត្រថ្មីជោគជ័យ ១០០%! (Receipt uploaded & updated successfully!)${codeNote}`);
             loadDashboardStats();
             loadRegistrations();
         } else {
@@ -599,7 +618,7 @@ async function handleAdminUploadReceipt(regId) {
         console.error(e);
         if (uploadBtn) {
             uploadBtn.disabled = false;
-            uploadBtn.innerText = '📤 Upload & Accept';
+            uploadBtn.innerText = '📤 Upload ថ្មី';
         }
         alert('មានបញ្ហាក្នុងការ Upload វិក័យបត្រ');
     }
