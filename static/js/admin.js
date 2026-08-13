@@ -1,5 +1,107 @@
 // Admin Dashboard Interactivity
 
+// Modern Centered Custom Alert Modal System
+function showAlert(message, title = 'MTI Academy System', type = null) {
+    return new Promise((resolve) => {
+        let overlay = document.getElementById('customAlertOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'customAlertOverlay';
+            overlay.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                background: rgba(10, 15, 30, 0.75); backdrop-filter: blur(10px);
+                display: flex; align-items: center; justify-content: center;
+                z-index: 999999; opacity: 0; transition: opacity 0.25s ease;
+                padding: 1.25rem; box-sizing: border-box;
+            `;
+            overlay.innerHTML = `
+                <div id="customAlertCard" style="
+                    width: 100%; max-width: 440px; background: #1e293b;
+                    border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 20px;
+                    padding: 2.25rem 1.75rem 1.75rem 1.75rem; text-align: center; color: #fff;
+                    box-shadow: 0 25px 60px rgba(0,0,0,0.7); transform: scale(0.88);
+                    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+                    font-family: inherit;
+                ">
+                    <div id="customAlertIcon" style="font-size: 3.25rem; margin-bottom: 0.85rem; line-height: 1; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));">ℹ️</div>
+                    <h3 id="customAlertTitle" style="font-size: 1.3rem; font-weight: 800; margin-bottom: 0.6rem; color: #fff; letter-spacing: -0.01em;">Notice</h3>
+                    <p id="customAlertMsg" style="font-size: 0.95rem; color: #cbd5e1; line-height: 1.65; margin-bottom: 1.75rem; white-space: pre-line; word-break: break-word; font-weight: 500;"></p>
+                    <button id="customAlertOkBtn" style="
+                        width: 100%; padding: 0.85rem; font-weight: 700; font-size: 1rem;
+                        border-radius: 12px; border: none; background: linear-gradient(135deg, #3b82f6, #2563eb);
+                        color: #fff; cursor: pointer; transition: all 0.2s ease;
+                        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+                    ">
+                        យល់ព្រម (OK)
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        const card = document.getElementById('customAlertCard');
+        const iconEl = document.getElementById('customAlertIcon');
+        const titleEl = document.getElementById('customAlertTitle');
+        const msgEl = document.getElementById('customAlertMsg');
+        const okBtn = document.getElementById('customAlertOkBtn');
+
+        const msgStr = String(message || '');
+        const msgLower = msgStr.toLowerCase();
+
+        let icon = 'ℹ️';
+        if (type === 'success' || msgLower.includes('ជោគជ័យ') || msgLower.includes('success') || msgLower.includes('ចម្លង')) {
+            icon = '✅';
+            title = title === 'MTI Academy System' ? 'ជោគជ័យ (Success)' : title;
+        } else if (type === 'error' || msgLower.includes('បរាជ័យ') || msgLower.includes('failed') || msgLower.includes('error') || msgLower.includes('មិនអាច') || msgLower.includes('ខុស')) {
+            icon = '❌';
+            title = title === 'MTI Academy System' ? 'បរាជ័យ (Error)' : title;
+        } else if (type === 'warning' || msgLower.includes('សូម') || msgLower.includes('warning')) {
+            icon = '⚠️';
+            title = title === 'MTI Academy System' ? 'ការជូនដំណឹង (Notice)' : title;
+        }
+
+        iconEl.innerText = icon;
+        titleEl.innerText = title;
+        msgEl.innerText = msgStr;
+
+        overlay.style.display = 'flex';
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+            card.style.transform = 'scale(1)';
+        }, 10);
+
+        let closed = false;
+        function closeAlert() {
+            if (closed) return;
+            closed = true;
+            overlay.style.opacity = '0';
+            card.style.transform = 'scale(0.88)';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                resolve();
+            }, 200);
+        }
+
+        okBtn.onclick = closeAlert;
+        overlay.onclick = (e) => {
+            if (e.target === overlay) closeAlert();
+        };
+
+        const keyHandler = (e) => {
+            if (e.key === 'Escape' || e.key === 'Enter') {
+                document.removeEventListener('keydown', keyHandler);
+                closeAlert();
+            }
+        };
+        document.addEventListener('keydown', keyHandler);
+    });
+}
+
+// Override native alert globally for all popups
+window.alert = function(msg) {
+    showAlert(msg);
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboardStats();
     loadRegistrations();
