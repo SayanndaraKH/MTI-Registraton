@@ -463,6 +463,7 @@
       <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1rem;">
         <button id="receiptAcceptBtn" class="btn btn-primary" style="flex:1;">✓ អនុម័ត (Accept)</button>
         <button id="receiptRejectBtn" class="btn btn-outline" style="flex:1; color:#ef4444; border-color:rgba(239,68,68,0.3);">✕ បដិសេធ (Reject)</button>
+        <button id="btnToggleOfficialReceipt" class="btn btn-outline" style="width:100%; color:#10b981; border-color:rgba(16,185,129,0.4); margin-top:0.35rem;">📜 មើលវិក័យបត្រផ្លូវការដែលសាលាចេញជូន (View Issued Official Receipt)</button>
       </div>
 
       <!-- Admin Upload Receipt Section -->
@@ -547,8 +548,11 @@
           🖨️ វិក័យបត្រ និងលិខិតចូលរៀនផ្លូវការ (Official Tuition Receipt & Admission)
         </h3>
         <div style="display:flex; gap:0.6rem;">
+          <button onclick="closePrintReceiptModal(); openReceiptModal(window.currentReceiptId);" class="btn btn-outline btn-sm" style="padding:0.55rem 1rem; color:#f59e0b; border-color:rgba(245,158,11,0.4);">
+            🧾 មើលវិក័យបត្រសិស្ស (Student Slip)
+          </button>
           <button onclick="triggerReceiptPrint()" class="btn btn-primary btn-sm" style="padding:0.55rem 1.35rem; font-weight:bold; background:linear-gradient(135deg, #10b981, #059669); border:none;">
-            🖨️ បោះពុម្ពឥឡូវនេះ (Print Now)
+            🖨️ បោះពុម្ព (Print)
           </button>
           <button onclick="closePrintReceiptModal()" class="btn btn-outline btn-sm" style="padding:0.55rem 1rem;">
             ✕ បិទ (Close)

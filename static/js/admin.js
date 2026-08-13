@@ -181,8 +181,8 @@ async function loadRegistrations() {
 
             // Opens the receipt full size or allows Admin to upload a slip on behalf of student.
             const receiptCell = r.receipt_image_url
-                ? `<button onclick="openReceiptModal(${r.id})" class="btn btn-outline btn-sm">🧾 មើល (View)</button>`
-                : `<button onclick="openReceiptModal(${r.id})" class="btn btn-outline btn-sm" style="color:#10b981; border-color:rgba(16,185,129,0.35);">📤 Upload</button>`;
+                ? `<button onclick="openReceiptModal(${r.id})" class="btn btn-outline btn-sm" style="color:#f59e0b; border-color:rgba(245,158,11,0.4);" title="មើលរូបភាពវិក័យបត្រដែលសិស្សបាន Upload">🧾 វិក័យបត្រសិស្ស</button>`
+                : `<button onclick="openReceiptModal(${r.id})" class="btn btn-outline btn-sm" style="color:#10b981; border-color:rgba(16,185,129,0.35);" title="Upload វិក័យបត្រជំនួសសិស្ស">📤 Upload Slip</button>`;
 
             let actionBtnsHtml = '';
             if (r.status === 'PAID' && r.invite_link) {
@@ -195,7 +195,7 @@ async function loadRegistrations() {
                 actionBtnsHtml = `<a href="${r.invite_link}" target="_blank" class="btn btn-outline btn-sm">🔗 View Link</a>${codeChip}`;
             } else if (r.status === 'SUBMITTED') {
                 actionBtnsHtml = `
-                    <button onclick="openReceiptModal(${r.id})" class="btn btn-primary btn-sm">🔍 ពិនិត្យ (Review)</button>
+                    <button onclick="openReceiptModal(${r.id})" class="btn btn-primary btn-sm">🔍 ពិនិត្យ Slip</button>
                     <button onclick="rejectRegistration(${r.id})" class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">✕ Reject</button>
                 `;
             } else {
@@ -203,7 +203,7 @@ async function loadRegistrations() {
             }
 
             actionBtnsHtml += `
-                <button onclick="openPrintReceiptModal(${r.id})" class="btn btn-outline btn-sm" style="color:#38bdf8; border-color:rgba(56,189,248,0.4);" title="បោះពុម្ពវិក័យបត្រ (Print Receipt)">🖨️ Print</button>
+                <button onclick="openPrintReceiptModal(${r.id})" class="btn btn-outline btn-sm" style="color:#10b981; border-color:rgba(16,185,129,0.4);" title="មើល និងបោះពុម្ពវិក័យបត្រផ្លូវការសាលា">📜 វិក័យបត្រសាលា</button>
                 <button onclick="editRegistration(${r.id})" class="btn btn-outline btn-sm">✏️ Edit</button>
                 <button onclick="deleteRegistration(${r.id}, ${escapeHtml(JSON.stringify(r.invoice_id || ''))})" class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">🗑️ Delete</button>
             `;
@@ -532,11 +532,16 @@ async function openReceiptModal(regId) {
             uploadBtn.style.display = r.status === 'PAID' ? 'none' : 'inline-flex';
         }
 
-        // Approve/reject straight from the preview, so the slip is always seen first.
-        document.getElementById('receiptAcceptBtn').onclick = () => approveRegistration(regId);
-        document.getElementById('receiptRejectBtn').onclick = () => rejectRegistration(regId);
-        document.getElementById('receiptAcceptBtn').style.display = r.status === 'PAID' ? 'none' : 'inline-flex';
-        document.getElementById('receiptRejectBtn').style.display = r.status === 'PAID' ? 'none' : 'inline-flex';
+        window.currentReceiptId = regId;
+
+        // Toggle to Official Issued Receipt Modal
+        const btnToggle = document.getElementById('btnToggleOfficialReceipt');
+        if (btnToggle) {
+            btnToggle.onclick = () => {
+                closeReceiptModal();
+                openPrintReceiptModal(regId);
+            };
+        }
 
         document.getElementById('receiptModal').classList.add('active');
     } catch (e) {
