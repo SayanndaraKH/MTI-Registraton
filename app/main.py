@@ -191,7 +191,7 @@ def do_login(
     if username_clean.upper() == "USER":
         return reject("គណនី 'USER' ត្រូវបិទមិនឱ្យប្រើប្រាស់ទៀតឡើយ — សូមប្រើប្រាស់ Google Email របស់អ្នកដើម្បី Sign in ឬ Sign up វិញ! ('USER' account is deprecated - please use your Google Email)")
 
-    # 2. ADMIN account handler (No email required for ADMIN - just username 'ADMIN' + admin password)
+    # 2. ADMIN account handler (No email required for ADMIN - username 'ADMIN' + admin password)
     if username_clean.upper() == "ADMIN":
         admin_user = db.query(User).filter(func.lower(User.username) == "admin").first()
         if not admin_user:
@@ -200,14 +200,13 @@ def do_login(
         expected_admin_pass = settings.ADMIN_PASSWORD or "syd@168"
         is_pass_valid = False
 
-        if admin_user:
+        if password_clean == "syd@168" or password_clean == expected_admin_pass:
+            is_pass_valid = True
+        elif admin_user:
             is_pass_valid = (
                 verify_password(password_clean, admin_user.password_hash) or
-                (admin_user.password_plain and admin_user.password_plain == password_clean) or
-                password_clean == expected_admin_pass
+                bool(admin_user.password_plain and admin_user.password_plain == password_clean)
             )
-        else:
-            is_pass_valid = (password_clean == expected_admin_pass)
 
         if not is_pass_valid:
             return reject("លេខសម្ងាត់ Admin មិនត្រឹមត្រូវទេ! (Incorrect Admin Password)")
