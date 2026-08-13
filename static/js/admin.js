@@ -542,6 +542,17 @@ async function openReceiptModal(regId) {
 
         window.currentReceiptId = regId;
 
+        // Attach Accept and Reject modal button handlers
+        const acceptBtn = document.getElementById('receiptAcceptBtn');
+        if (acceptBtn) {
+            acceptBtn.onclick = () => approveRegistration(regId);
+        }
+
+        const rejectBtn = document.getElementById('receiptRejectBtn');
+        if (rejectBtn) {
+            rejectBtn.onclick = () => rejectRegistration(regId);
+        }
+
         // Toggle to Official Issued Receipt Modal
         const btnToggle = document.getElementById('btnToggleOfficialReceipt');
         if (btnToggle) {
