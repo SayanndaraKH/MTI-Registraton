@@ -498,13 +498,28 @@ async function openReceiptModal(regId) {
 
         const img = document.getElementById('receiptModalImg');
         const empty = document.getElementById('receiptModalEmpty');
+
+        img.onerror = () => {
+            console.warn('Receipt image failed to load:', r.receipt_image_url);
+            img.style.display = 'none';
+            empty.style.display = 'block';
+            empty.innerHTML = `
+                <div style="text-align:center; padding:1.25rem 1rem; color:#f87171;">
+                    <div style="font-size:2.2rem; margin-bottom:0.4rem;">⚠️</div>
+                    <p style="font-weight:bold; font-size:0.95rem; margin-bottom:0.25rem;">រូបភាពវិក័យបត្រពុំទាន់មាន ឬត្រូវបាត់បង់ (Receipt image unavailable)</p>
+                    <p style="color:#94a3b8; font-size:0.82rem; margin-bottom:0.5rem;">លោកអ្នកអាចជ្រើសរើសរូបភាព Upload ជំនួសខាងក្រោមបាន។</p>
+                </div>
+            `;
+        };
+
         if (r.receipt_image_url) {
-            img.src = r.receipt_image_url + '?t=' + Date.now();
+            img.src = r.receipt_image_url + (r.receipt_image_url.includes('?') ? '&' : '?') + 't=' + Date.now();
             img.style.display = 'block';
             empty.style.display = 'none';
         } else {
             img.style.display = 'none';
             empty.style.display = 'block';
+            empty.innerHTML = `<div style="font-size:2rem; margin-bottom:0.5rem;">🧾</div><div>មិនទាន់មានរូបភាពវិក័យបត្រទេ (No receipt image uploaded)</div>`;
         }
 
         // Reset Admin Upload File Input
