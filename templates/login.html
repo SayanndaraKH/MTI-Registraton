@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ចូលគណនី (Google Email Login & Sign Up) - MTI Academy</title>
+  <title>ចូលគណនី (Login & Sign Up) - MTI Academy</title>
   <link rel="stylesheet" href="/static/css/style.css?v=3.0">
 </head>
 <body>
@@ -16,7 +16,7 @@
           MTI Academy
         </h1>
         <p style="color:var(--text-muted); font-size:0.9rem; margin-top:0.35rem;">
-          ចូលគណនី ឬ ចុះឈ្មោះដោយប្រើ Google Email
+          ចូលគណនី ឬ ចុះឈ្មោះ (Login & Sign Up)
         </p>
       </div>
 
@@ -27,17 +27,18 @@
       {% endif %}
 
       <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7; border-radius:var(--radius-md); padding:0.85rem 1rem; font-size:0.83rem; margin-bottom:1.25rem; line-height:1.65;">
-        ✨ <strong>Google Email Login & Auto Sign-up:</strong><br>
-        • ចូលប្រើប្រាស់ដោយស្វ័យប្រវត្តិជាមួយ Google Email និងលេខសម្ងាត់របស់អ្នក (លេខសម្ងាត់ដាក់អ្វីក៏បាន)។<br>
-        • ករណីមិនទាន់មានគណនី ប្រព័ន្ធនឹង **Sign Up ចុះឈ្មោះអូតូ**។ លើកក្រោយបើកប្រព័ន្ធ នឹង **Auto Sign in ស្គាល់ភ្លាមៗ** ដោយមិនបាច់ Login ទៀតឡើយ!
+        ✨ <strong>សម្រាប់សិស្ស (Students):</strong><br>
+        • វាយ **Google Email** និងលេខសម្ងាត់របស់អ្នក ៖ ប្រព័ន្ធនឹង **Sign Up អូតូ** ប្រសិនបើប្រើលើកដំបូង។ លើកក្រោយបើកប្រព័ន្ធ នឹង **Auto Sign in** ដោយស្វ័យប្រវត្តិ!<br><br>
+        🔑 <strong>សម្រាប់ ADMIN:</strong><br>
+        • មិនបាច់ប្រើ Email ទេ — គ្រាន់តែវាយ **ADMIN** ត្រង់កន្លែង Username និងវាយ **លេខសម្ងាត់ Admin (syd@168)** ជាការស្រេច!
       </div>
 
       <form method="post" action="/login">
         <input type="hidden" name="next" value="{{ next }}">
 
         <div class="form-group">
-          <label class="form-label" for="username">📧 Google Email *</label>
-          <input type="email" id="username" name="username" class="form-input" placeholder="name@gmail.com" required autofocus autocomplete="username">
+          <label class="form-label" for="username">📧 Google Email / 👤 ADMIN *</label>
+          <input type="text" id="username" name="username" class="form-input" placeholder="ឧ. name@gmail.com ឬ ADMIN" required autofocus autocomplete="username">
         </div>
 
         <div class="form-group">
