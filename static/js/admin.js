@@ -173,7 +173,9 @@ async function loadRegistrations() {
             PENDING: `<span class="status-badge status-pending"><span class="pulse-dot"></span> PENDING</span>`
         };
 
+        window.registrationsMap = {};
         data.forEach(r => {
+            window.registrationsMap[r.id] = r;
             const tr = document.createElement('tr');
             const statusBadge = statusBadges[r.status] || statusBadges.PENDING;
 
@@ -201,6 +203,7 @@ async function loadRegistrations() {
             }
 
             actionBtnsHtml += `
+                <button onclick="openPrintReceiptModal(${r.id})" class="btn btn-outline btn-sm" style="color:#38bdf8; border-color:rgba(56,189,248,0.4);" title="បោះពុម្ពវិក័យបត្រ (Print Receipt)">🖨️ Print</button>
                 <button onclick="editRegistration(${r.id})" class="btn btn-outline btn-sm">✏️ Edit</button>
                 <button onclick="deleteRegistration(${r.id}, ${escapeHtml(JSON.stringify(r.invoice_id || ''))})" class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">🗑️ Delete</button>
             `;
@@ -586,6 +589,78 @@ function closeReceiptModal() {
     document.getElementById('receiptModal').classList.remove('active');
 }
 
+// ---------- Printable Official Receipt Modal Handlers ----------
+
+function openPrintReceiptModal(regId) {
+    const r = window.registrationsMap ? window.registrationsMap[regId] : null;
+    if (!r) {
+        return alert('ពុំមានទិន្នន័យសម្រាប់បោះពុម្ពទេ (Registration data not found)');
+    }
+
+    // Populate Receipt Metadata
+    document.getElementById('rcpInvoiceId').innerText = r.invoice_id || ('INV-' + String(r.id).padStart(6, '0'));
+    
+    let dateStr = '13-Aug-2026';
+    if (r.created_at) {
+        const d = new Date(r.created_at);
+        dateStr = d.toLocaleDateString('km-KH', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+    document.getElementById('rcpDate').innerText = dateStr;
+    document.getElementById('rcpStatus').innerText = r.status === 'PAID' ? '✓ បានទូទាត់ប្រាក់រួច (PAID)' : ('' + r.status);
+
+    // Populate Student Info
+    document.getElementById('rcpStudentName').innerText = r.student_name || '—';
+    document.getElementById('rcpStudentPhone').innerText = r.phone_number || '—';
+    
+    const tg = r.telegram_username ? (r.telegram_username.startsWith('@') ? r.telegram_username : '@' + r.telegram_username) : '—';
+    document.getElementById('rcpStudentTelegram').innerText = tg;
+    document.getElementById('rcpStudentSigName').innerText = r.student_name || '........................................';
+
+    // Populate Course & Class Schedule Info
+    const courseTitle = r.course_title || '—';
+    document.getElementById('rcpCourseTitle').innerText = courseTitle;
+    document.getElementById('rcpItemDesc').innerText = `ថ្លៃសិក្សាវគ្គ ${courseTitle}`;
+
+    // Find course details in global courses array if available
+    let classStart = '15-Aug-2026';
+    let classTime = '2:00 PM - 4:00 PM (ច័ន្ទ - សុក្រ)';
+    let duration = '3 ខែ (3 Months)';
+
+    if (window.coursesMap && r.course_id && window.coursesMap[r.course_id]) {
+        const c = window.coursesMap[r.course_id];
+        if (c.class_start_date) classStart = c.class_start_date;
+        if (c.class_time) classTime = c.class_time;
+        if (c.duration) duration = c.duration;
+    }
+
+    document.getElementById('rcpClassStartDate').innerText = classStart;
+    document.getElementById('rcpClassTime').innerText = classTime;
+    document.getElementById('rcpCourseDuration').innerText = duration;
+
+    // Financial Breakdown
+    const curr = r.currency || 'USD';
+    const amountVal = r.amount ? (curr === 'USD' ? `$${r.amount.toFixed(2)}` : `${r.amount.toLocaleString()} KHR`) : '$0.00';
+    document.getElementById('rcpItemAmount').innerText = amountVal;
+    document.getElementById('rcpTotalAmount').innerText = amountVal;
+
+    // Show modal
+    const modal = document.getElementById('printReceiptModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function triggerReceiptPrint() {
+    window.print();
+}
+
+function closePrintReceiptModal() {
+    const modal = document.getElementById('printReceiptModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // ---------- Edit / delete a student registration ----------
 
 async function editRegistration(regId) {
@@ -681,8 +756,9 @@ async function loadCourses() {
         const container = document.getElementById('adminCourseList');
         if (!container) return;
 
-        container.innerHTML = '';
+        window.coursesMap = {};
         courses.forEach(c => {
+            window.coursesMap[c.id] = c;
             const card = document.createElement('div');
             card.className = 'course-card';
 
