@@ -652,7 +652,11 @@ async function openPrintReceiptModal(regId) {
     // Populate Receipt Metadata
     const rcpInvoiceId = document.getElementById('rcpInvoiceId');
     if (rcpInvoiceId) rcpInvoiceId.innerText = r.invoice_id || ('INV-' + String(r.id).padStart(6, '0'));
-    
+    const rcpAdminPhone = document.getElementById('rcpAdminPhone');
+    if (rcpAdminPhone) {
+        rcpAdminPhone.innerText = (window.siteSettings && window.siteSettings.phone_number) ? window.siteSettings.phone_number : '092 800 104';
+    }
+
     let dateStr = '13-Aug-2026';
     if (r.created_at) {
         try {
@@ -667,14 +671,6 @@ async function openPrintReceiptModal(regId) {
 
     const rcpStatus = document.getElementById('rcpStatus');
     if (rcpStatus) rcpStatus.innerText = r.status === 'PAID' ? '✓ បានទូទាត់ប្រាក់រួច (PAID)' : ('' + r.status);
-
-    // Populate Admin Contact Phone
-    const rcpAdminPhone = document.getElementById('rcpAdminPhone');
-    if (rcpAdminPhone) {
-        const phoneInput = document.getElementById('settingContactPhone');
-        const phoneVal = (phoneInput && phoneInput.value) ? phoneInput.value : '092 800 104';
-        rcpAdminPhone.innerText = phoneVal;
-    }
 
     // Populate Student Info
     const rcpStudentName = document.getElementById('rcpStudentName');
