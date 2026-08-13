@@ -105,12 +105,16 @@ def seed_initial_courses(db: Session):
 
 @app.on_event("startup")
 def on_startup():
-    db = next(get_db())
     try:
-        seed_initial_courses(db)
-        seed_admin_account(db)
-    finally:
-        db.close()
+        from app.database import SessionLocal
+        db = SessionLocal()
+        try:
+            seed_initial_courses(db)
+            seed_admin_account(db)
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"Startup notice: Database seeding error (app will continue): {e}")
 
 from fastapi import Response
 
@@ -134,7 +138,8 @@ def get_public_settings(response: Response, db: Session = Depends(get_db)):
 # ---------- Login / logout ----------
 
 @app.get("/login", response_class=HTMLResponse)
-def page_login(request: Request, next: str = "/", error: Optional[str] = None):
+def page_login(request: Request, response: Response, next: str = "/", error: Optional[str] = None):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return templates.TemplateResponse(
         request,
         "login.html",
