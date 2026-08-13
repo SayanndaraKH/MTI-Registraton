@@ -56,11 +56,12 @@ def run_light_migrations():
                 except Exception as e:
                     print(f"Migration notice: {e}")
             else:
-                try:
-                    with engine.begin() as conn:
-                        conn.execute(text("ALTER TABLE registrations ALTER COLUMN receipt_image_url TYPE TEXT"))
-                except Exception as e:
-                    print(f"Migration notice: {e}")
+                if "sqlite" not in _database_url:
+                    try:
+                        with engine.begin() as conn:
+                            conn.execute(text("ALTER TABLE registrations ALTER COLUMN receipt_image_url TYPE TEXT"))
+                    except Exception as e:
+                        pass
 
             if "user_id" not in existing_columns:
                 try:
@@ -138,6 +139,21 @@ def run_light_migrations():
                         conn.execute(text("ALTER TABLE users ADD COLUMN lockout_until TIMESTAMP"))
                 except Exception as e:
                     print(f"Migration notice: {e}")
+            if "machine_id" not in user_columns:
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN machine_id VARCHAR(255)"))
+                except Exception as e:
+                    print(f"Migration notice: {e}")
+
+        if "registrations" in inspector.get_table_names():
+            reg_cols = {col["name"] for col in inspector.get_columns("registrations")}
+            if "machine_id" not in reg_cols:
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE registrations ADD COLUMN machine_id VARCHAR(255)"))
+                except Exception as e:
+                    print(f"Migration notice: {e}")
 
         # Course-specific Telegram Group link & registration/class dates
         if "courses" in inspector.get_table_names():
@@ -160,5 +176,35 @@ def run_light_migrations():
             if "initial_registered_count" not in course_columns:
                 with engine.begin() as conn:
                     conn.execute(text("ALTER TABLE courses ADD COLUMN initial_registered_count INTEGER DEFAULT 0"))
+
+        # Seed KHQR Image as Base64 Data URI if empty or missing
+        if "system_settings" in inspector.get_table_names():
+            import os, base64
+            with engine.begin() as conn:
+                row = conn.execute(text("SELECT value FROM system_settings WHERE key = 'KHQR_IMAGE_URL'")).fetchone()
+                val = row[0] if row else ""
+                if not val or not val.startswith("data:"):
+                    # Try to load existing khqr image file from static/uploads
+                    khqr_dir = os.path.join("static", "uploads")
+                    found_file = None
+                    if os.path.exists(khqr_dir):
+                        for f in os.listdir(khqr_dir):
+                            if f.startswith("khqr_") and f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                                found_file = os.path.join(khqr_dir, f)
+                                break
+                    if found_file and os.path.exists(found_file):
+                        try:
+                            with open(found_file, "rb") as kf:
+                                kbytes = kf.read()
+                            b64 = base64.b64encode(kbytes).decode("utf-8")
+                            mime = "image/jpeg" if found_file.lower().endswith((".jpg", ".jpeg")) else "image/png"
+                            b64_uri = f"data:{mime};base64,{b64}"
+                            if row:
+                                conn.execute(text("UPDATE system_settings SET value = :val WHERE key = 'KHQR_IMAGE_URL'"), {"val": b64_uri})
+                            else:
+                                conn.execute(text("INSERT INTO system_settings (key, value, description) VALUES ('KHQR_IMAGE_URL', :val, 'KHQR Payment Base64 Image')"), {"val": b64_uri})
+                            print("Seeded KHQR Base64 Image into system_settings")
+                        except Exception as ex:
+                            print(f"KHQR seed notice: {ex}")
     except Exception as err:
         print(f"Migration notice: {err}")

@@ -22,6 +22,7 @@ class User(Base):
     phone_number = Column(String(50), nullable=True)
     telegram_username = Column(String(100), nullable=True)
     role = Column(String(20), default="STUDENT")  # ADMIN or STUDENT
+    machine_id = Column(String(255), nullable=True, index=True) # Machine ID / Hardware Fingerprint
     failed_attempts = Column(Integer, default=0)    # Consecutive failed password attempts counter
     lockout_until = Column(DateTime, nullable=True)   # Timestamp until 2-hour login lockout expires
     is_active = Column(Boolean, default=True)
@@ -56,6 +57,7 @@ class Registration(Base):
     id = Column(Integer, primary_key=True, index=True)
     invoice_id = Column(String(100), unique=True, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # the logged-in student who registered
+    machine_id = Column(String(255), nullable=True, index=True) # Machine ID used during registration
     student_name = Column(String(255), nullable=False)
     phone_number = Column(String(50), nullable=False)
     telegram_username = Column(String(100), nullable=False)

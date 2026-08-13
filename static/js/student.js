@@ -110,8 +110,18 @@ document.addEventListener('DOMContentLoaded', () => {
     initStudentChat();
 });
 
-// Global state
+// Global state & Machine ID fingerprinting
 let selectedCourseId = null;
+
+function getOrCreateMachineId() {
+    let mid = localStorage.getItem('mti_machine_id');
+    if (!mid) {
+        mid = 'MID-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
+        localStorage.setItem('mti_machine_id', mid);
+    }
+    document.cookie = `mti_machine_id=${mid}; path=/; max-age=${365*86400}`;
+    return mid;
+}
 
 function initRegistrationModal() {
     const modal = document.getElementById('registrationModal');
@@ -166,7 +176,8 @@ function initRegistrationModal() {
                 student_name: document.getElementById('studentName').value.trim(),
                 phone_number: document.getElementById('phoneNumber').value.trim(),
                 telegram_username: document.getElementById('telegramUsername').value.trim(),
-                currency: document.getElementById('paymentCurrency').value
+                currency: document.getElementById('paymentCurrency').value,
+                machine_id: getOrCreateMachineId()
             };
 
             try {
@@ -317,7 +328,8 @@ async function loadPublicSettings(invoiceId) {
 
         const khqrImg = document.getElementById('khqrImage');
         if (khqrImg && s.khqr_image_url) {
-            khqrImg.src = s.khqr_image_url + (s.khqr_image_url.includes('?') ? '&' : '?') + 't=' + Date.now();
+            const isB64 = s.khqr_image_url.startsWith('data:');
+            khqrImg.src = isB64 ? s.khqr_image_url : (s.khqr_image_url + (s.khqr_image_url.includes('?') ? '&' : '?') + 't=' + Date.now());
         }
 
         const telegramBtn = document.getElementById('telegramContactBtn');

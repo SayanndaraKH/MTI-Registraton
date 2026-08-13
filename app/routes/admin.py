@@ -308,10 +308,12 @@ async def upload_khqr_image(file: UploadFile = File(...), db: Session = Depends(
     safe_name = f"khqr_{uuid.uuid4().hex[:8]}{ext}"
     dest_path = os.path.join(KHQR_UPLOAD_DIR, safe_name)
 
+    contents = await file.read()
     with open(dest_path, "wb") as buffer:
-        buffer.write(await file.read())
+        buffer.write(contents)
 
-    image_url = f"/static/uploads/{safe_name}"
+    from app.routes.registrations import process_receipt_image_to_b64
+    image_url = process_receipt_image_to_b64(contents, file.content_type)
 
     existing = db.query(SystemSetting).filter(SystemSetting.key == "KHQR_IMAGE_URL").first()
     if existing:

@@ -20,24 +20,27 @@
         </p>
       </div>
 
+      <div id="jsErrorAlert" style="display:none; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; border-radius:var(--radius-md); padding:0.9rem 1rem; font-size:0.87rem; margin-bottom:1.25rem; line-height:1.5;"></div>
+
       {% if error %}
       <div style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; border-radius:var(--radius-md); padding:0.9rem 1rem; font-size:0.87rem; margin-bottom:1.25rem; line-height:1.5;">
         {{ error }}
       </div>
       {% endif %}
 
-      <form method="post" action="/login" novalidate>
+      <form id="loginForm" method="post" action="/login" novalidate>
         <input type="hidden" name="next" value="{{ next }}">
+        <input type="hidden" id="machineIdInput" name="machine_id" value="">
 
         <div class="form-group">
           <label class="form-label" for="username">📧 Google Email / 👤 ADMIN *</label>
-          <input type="text" id="username" name="username" class="form-input" placeholder="ឧ. name@gmail.com ឬ ADMIN" required autofocus autocomplete="username">
+          <input type="email" id="username" name="username" class="form-input" placeholder="ឧ. name@gmail.com ឬ ADMIN" required autofocus autocomplete="email username">
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="password">🔒 លេខសម្ងាត់ (Password) *</label>
+          <label class="form-label" for="password">🔒 លេខសម្ងាត់ (Password - យ៉ាងតិច ៦ ខ្ទង់) *</label>
           <div style="position: relative; display: flex; align-items: center;">
-            <input type="password" id="password" name="password" class="form-input" placeholder="វាយលេខសម្ងាត់របស់អ្នក" required autocomplete="current-password" style="padding-right: 2.75rem;">
+            <input type="password" id="password" name="password" class="form-input" placeholder="វាយលេខសម្ងាត់របស់អ្នក (យ៉ាងតិច ៦ ខ្ទង់)" required autocomplete="current-password" minlength="6" style="padding-right: 2.75rem;">
             <button type="button" id="togglePasswordBtn" onclick="togglePasswordVisibility()" style="position: absolute; right: 0.6rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff; cursor: pointer; font-size: 1.05rem; padding: 0.25rem 0.5rem; border-radius: 6px; display: flex; align-items: center; justify-content: center;" title="បង្ហាញ / លាក់លេខសម្ងាត់ (Show / Hide Password)">
               👁️
             </button>
@@ -45,13 +48,13 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="full_name">📝 ឈ្មោះពេញ (Full Name - សម្រាប់សិស្សថ្មី)</label>
+          <label class="form-label" for="full_name">📝 ឈ្មោះពេញ (Full Name - សម្រាប់សិស្ស) *</label>
           <input type="text" id="full_name" name="full_name" class="form-input" placeholder="ឧ. សុខ ចាន់ (Sok Chan)">
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="phone_number">📞 លេខទូរស័ព្ទ (Phone Number - សម្រាប់សិស្សថ្មី)</label>
-          <input type="tel" id="phone_number" name="phone_number" class="form-input" placeholder="ឧ. 012 345 678">
+          <label class="form-label" for="phone_number">📞 លេខទូរស័ព្ទ (Phone Number - Metfone, Cellcard, Smart) *</label>
+          <input type="tel" id="phone_number" name="phone_number" class="form-input" placeholder="ឧ. 012345678 ឬ 0971234567">
         </div>
 
         <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.75rem; padding:0.85rem; font-weight:700; font-size:1rem;">
@@ -60,12 +63,86 @@
       </form>
 
       <p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:1.5rem; line-height:1.6;">
-        🛡️ សុវត្ថិភាព ៖ ប្រសិនបើបញ្ចូលលេខសម្ងាត់ខុស <strong>៥ ដង</strong> ប្រព័ន្ធនឹងបិទការចូល <strong>២ ម៉ោង</strong> ដោយស្វ័យប្រវត្តិ។
+        🛡️ <strong>សុវត្ថិភាព PC Fingerprint</strong> ៖ ម៉ាស៊ីន PC មួយ អាចប្រើប្រាស់បានតែ ១ គណនីប៉ុណ្ណោះ។ ប្រសិនបើបញ្ចូលលេខសម្ងាត់ខុស <strong>៥ ដង</strong> ប្រព័ន្ធនឹងបិទការចូល <strong>២ ម៉ោង</strong> ដោយស្វ័យប្រវត្តិ។
       </p>
     </div>
   </main>
 
   <script>
+    function getOrCreateMachineId() {
+      let mid = localStorage.getItem('mti_machine_id');
+      if (!mid) {
+        mid = 'MID-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
+        localStorage.setItem('mti_machine_id', mid);
+      }
+      document.cookie = `mti_machine_id=${mid}; path=/; max-age=${365*86400}`;
+      return mid;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const mid = getOrCreateMachineId();
+      document.getElementById('machineIdInput').value = mid;
+
+      const form = document.getElementById('loginForm');
+      const errAlert = document.getElementById('jsErrorAlert');
+
+      form.addEventListener('submit', (e) => {
+        errAlert.style.display = 'none';
+        errAlert.innerText = '';
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const fullName = document.getElementById('full_name').value.trim();
+        const phone = document.getElementById('phone_number').value.trim();
+
+        // 1. ADMIN Exception
+        if (username.toUpperCase() === 'ADMIN') {
+          if (!password) {
+            e.preventDefault();
+            errAlert.innerText = 'សូមបញ្ចូលលេខសម្ងាត់ Admin (Password: syd@168)';
+            errAlert.style.display = 'block';
+            return;
+          }
+          return;
+        }
+
+        // 2. Email Validation
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!username || !emailRegex.test(username)) {
+          e.preventDefault();
+          errAlert.innerText = '⚠️ សូមបញ្ចូល Google Email ឱ្យបានត្រឹមត្រូវ (ឧ. name@gmail.com)';
+          errAlert.style.display = 'block';
+          return;
+        }
+
+        // 3. Password Length >= 6
+        if (!password || password.length < 6) {
+          e.preventDefault();
+          errAlert.innerText = '⚠️ លេខសម្ងាត់ត្រូវតែមានយ៉ាងតិច ៦ ខ្ទង់ឡើងទៅ! (Password must be at least 6 characters)';
+          errAlert.style.display = 'block';
+          return;
+        }
+
+        // 4. Full Name Validation
+        if (!fullName) {
+          e.preventDefault();
+          errAlert.innerText = '⚠️ សូមបញ្ចូលឈ្មោះពេញរបស់អ្នក (Full Name is required)';
+          errAlert.style.display = 'block';
+          return;
+        }
+
+        // 5. Cambodian Phone Validation
+        const cleanPhone = phone.replace(/[\s\-+]/g, '');
+        const phoneRegex = /^0[1-9]\d{7,8}$/;
+        if (!phone || !phoneRegex.test(cleanPhone)) {
+          e.preventDefault();
+          errAlert.innerText = '⚠️ សូមបញ្ចូលលេខទូរស័ព្ទត្រឹមត្រូវតាមទម្រង់ប្រទេសកម្ពុជា (Metfone, Cellcard, Smart: ឧ. 012345678, 0971234567)';
+          errAlert.style.display = 'block';
+          return;
+        }
+      });
+    });
+
     function togglePasswordVisibility() {
       const pwdInput = document.getElementById('password');
       const toggleBtn = document.getElementById('togglePasswordBtn');

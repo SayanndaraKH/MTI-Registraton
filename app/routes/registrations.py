@@ -44,6 +44,36 @@ def register_student(
     if not course.is_active:
         raise HTTPException(status_code=400, detail="វគ្គសិក្សានេះមិនទាន់បើកទទួលការចុះឈ្មោះនៅឡើយទេ - Coming Soon (Course is inactive)")
 
+    # Machine ID Check & Duplicate Course Registration Check
+    mach_id = reg_in.machine_id or (user.machine_id if user else None)
+
+    # 1. Check if this User Account has ALREADY registered for this course
+    existing_user_reg = db.query(Registration).filter(
+        Registration.user_id == user.id,
+        Registration.course_id == course.id,
+        Registration.status.in_(["PENDING", "SUBMITTED", "PAID"])
+    ).first()
+
+    if existing_user_reg:
+        raise HTTPException(
+            status_code=400,
+            detail=f"លោកអ្នកបានចុះឈ្មោះរៀនវគ្គ '{course.title}' នេះរួចរាល់ហើយ! មិនអាចចុះឈ្មោះជាន់គ្នាបានទេ (You have already registered for this course)"
+        )
+
+    # 2. Check if this Machine ID has ALREADY registered for this course
+    if mach_id:
+        existing_mach_reg = db.query(Registration).filter(
+            Registration.machine_id == mach_id,
+            Registration.course_id == course.id,
+            Registration.status.in_(["PENDING", "SUBMITTED", "PAID"])
+        ).first()
+
+        if existing_mach_reg:
+            raise HTTPException(
+                status_code=400,
+                detail=f"ម៉ាស៊ីន PC នេះបានចុះឈ្មោះរៀនវគ្គ '{course.title}' នេះរួចរាល់ហើយ! មិនអាចចុះឈ្មោះជាន់គ្នាបានទេ (This PC has already registered for this course)"
+            )
+
     # Generate unique invoice ID
     invoice_id = generate_invoice_id()
 
@@ -63,11 +93,14 @@ def register_student(
             user.phone_number = reg_in.phone_number.strip()
         if reg_in.telegram_username and not user.telegram_username:
             user.telegram_username = reg_in.telegram_username.strip().lstrip("@")
+        if mach_id and not user.machine_id:
+            user.machine_id = mach_id
 
     # Create DB registration
     db_reg = Registration(
         invoice_id=invoice_id,
         user_id=user.id,  # ties the invoice to the signed-in student account
+        machine_id=mach_id,
         student_name=reg_in.student_name.strip(),
         phone_number=reg_in.phone_number.strip(),
         telegram_username=reg_in.telegram_username.strip(),
@@ -191,12 +224,6 @@ def check_registration_status(
     return response_data
 
 
-@router.post("/{invoice_id}/receipt")
-async def upload_payment_receipt(
-    invoice_id: str,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    user: User = Depends(require_login),
 import io
 import base64
 from PIL import Image

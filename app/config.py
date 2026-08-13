@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = "syd@168"
 
     # Signs the session cookie. Changing it logs everyone out.
-    SECRET_KEY: str = ""
+    SECRET_KEY: str = "mti_course_sales_secret_key_2026_super_secure"
 
     # First-time visitors may pick their own username and password at the login
     # form; that first attempt creates the account. Turn off to make the Admin

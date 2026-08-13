@@ -51,6 +51,7 @@ class StudentRegistrationCreate(BaseModel):
     telegram_username: str
     course_id: int
     currency: str = "USD" # USD or KHR
+    machine_id: Optional[str] = None
 
 class RegistrationUpdate(BaseModel):
     """Admin edits a student's details from the dashboard. Only the fields sent are changed."""

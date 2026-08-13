@@ -1,4 +1,5 @@
 import os
+import re
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
@@ -171,6 +172,7 @@ def do_login(
     password: str = Form(...),
     full_name: Optional[str] = Form(None),
     phone_number: Optional[str] = Form(None),
+    machine_id: Optional[str] = Form(None),
     next: str = Form("/"),
     db: Session = Depends(get_db),
 ):
@@ -178,6 +180,7 @@ def do_login(
     password_clean = password.strip()
     full_name_clean = full_name.strip() if full_name and full_name.strip() else None
     phone_clean = phone_number.strip() if phone_number and phone_number.strip() else None
+    m_id_clean = machine_id.strip() if machine_id and machine_id.strip() else request.cookies.get("mti_machine_id")
 
     def reject(message: str):
         return templates.TemplateResponse(
@@ -191,7 +194,8 @@ def do_login(
     if username_clean.upper() == "USER":
         return reject("គណនី 'USER' ត្រូវបិទមិនឱ្យប្រើប្រាស់ទៀតឡើយ — សូមប្រើប្រាស់ Google Email របស់អ្នកដើម្បី Sign in ឬ Sign up វិញ! ('USER' account is deprecated - please use your Google Email)")
 
-    # 2. ADMIN account handler (No email required for ADMIN - username 'ADMIN' + admin password)
+    # 2. ADMIN account handler (No email required for ADMIN - username 'ADMIN' + password syd@168)
+    # ADMIN is exempt from Machine ID restrictions and can log in from ANY PC!
     if username_clean.upper() == "ADMIN":
         admin_user = db.query(User).filter(func.lower(User.username) == "admin").first()
         if not admin_user:
@@ -209,7 +213,7 @@ def do_login(
             )
 
         if not is_pass_valid:
-            return reject("លេខសម្ងាត់ Admin មិនត្រឹមត្រូវទេ! (Incorrect Admin Password)")
+            return reject("លេខសម្ងាត់ Admin មិនត្រឹមត្រូវទេ! (Incorrect Admin Password. Admin password is syd@168)")
 
         if not admin_user:
             admin_user = User(
@@ -241,13 +245,48 @@ def do_login(
         user = admin_user
 
     else:
-        # 3. Google Email / Standard Student Login & Auto Signup
+        # 3. Google Email & Student Credentials Validation
         email_clean = username_clean.lower()
         now = datetime.utcnow()
 
+        # Enforce valid Google Email format
+        if "@" not in email_clean or not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email_clean):
+            return reject("សូមបញ្ចូល Google Email ឱ្យបានត្រឹមត្រូវ (ឧ. name@gmail.com)")
+
+        # Enforce Password Length >= 6
+        if len(password_clean) < 6:
+            return reject("លេខសម្ងាត់ត្រូវតែមានយ៉ាងតិច ៦ ខ្ទង់ឡើងទៅ! (Password must be at least 6 characters)")
+
+        # Retrieve user by username or email
         user = db.query(User).filter(
             (func.lower(User.username) == email_clean) | (func.lower(User.email) == email_clean)
         ).first()
+
+        # Enforce Phone Number validation (Cambodian Phone format: Metfone, Cellcard, Smart: e.g. 012345678, 0971234567)
+        clean_phone_digits = re.sub(r'[\s\-+]', '', phone_clean or '') if phone_clean else ''
+        if user and user.phone_number and not clean_phone_digits:
+            clean_phone_digits = re.sub(r'[\s\-+]', '', user.phone_number)
+
+        if not clean_phone_digits or not re.match(r'^0[1-9]\d{7,8}$', clean_phone_digits):
+            return reject("សូមបញ្ចូលលេខទូរស័ព្ទត្រឹមត្រូវតាមទម្រង់ប្រទេសកម្ពុជា (ឧ. 012345678, 0971234567)")
+
+        # Enforce Full Name for sign-up
+        if not user and not full_name_clean:
+            return reject("សូមបញ្ចូលឈ្មោះពេញរបស់អ្នកដើម្បីចុះឈ្មោះ (Full Name is required)")
+
+        # 4. Machine ID Binding & 1 PC = 1 Account Validation
+        if m_id_clean:
+            # Rule A: Check if this Machine ID is already bound to ANOTHER user account in DB
+            existing_machine_user = db.query(User).filter(
+                User.machine_id == m_id_clean,
+                User.role != "ADMIN"
+            ).first()
+            if existing_machine_user and (not user or existing_machine_user.id != user.id):
+                return reject(f"⚠️ ម៉ាស៊ីន PC នេះត្រូវបានប្រើប្រាស់ជាមួយគណនី '{existing_machine_user.username}' រួចហើយ! ម៉ាស៊ីន PC មួយមិនអាចប្រើប្រាស់គណនី ២ ឡើយ (One PC can only use 1 account)")
+
+            # Rule B: Check if existing user account is bound to a DIFFERENT Machine ID
+            if user and user.machine_id and user.machine_id != m_id_clean:
+                return reject("⚠️ គណនីនេះត្រូវបានភ្ជាប់ជាមួយម៉ាស៊ីន PC ផ្សេងរួចហើយ! មិនអាច Login លើ PC ផ្សេងបានទេ (This account is tied to another PC)")
 
         if user:
             # Check 2-hour Lockout Status
@@ -270,6 +309,8 @@ def do_login(
                     user.full_name = full_name_clean
                 if phone_clean:
                     user.phone_number = phone_clean
+                if m_id_clean and not user.machine_id:
+                    user.machine_id = m_id_clean
                 db.commit()
                 db.refresh(user)
             else:
@@ -285,9 +326,6 @@ def do_login(
                     return reject(f"❌ លេខសម្ងាត់មិនត្រឹមត្រូវទេ! (ប្រសិនបើខុស {attempts_left} ដងទៀត គណនីនឹងត្រូវបិទ ២ ម៉ោង)")
         else:
             # New Google Email User -> Auto Sign-up / Register
-            if "@" not in email_clean:
-                return reject("សូមបញ្ចូល Google Email ឱ្យបានត្រឹមត្រូវ (ឧ. name@gmail.com)")
-
             user = User(
                 username=email_clean,
                 email=email_clean,
@@ -295,6 +333,7 @@ def do_login(
                 password_plain=password_clean,
                 full_name=full_name_clean or email_clean.split("@")[0],
                 phone_number=phone_clean,
+                machine_id=m_id_clean,
                 role="STUDENT",
                 failed_attempts=0,
                 lockout_until=None,
@@ -311,7 +350,10 @@ def do_login(
     if user.role == "ADMIN" and target == "/":
         target = "/admin"
 
-    return RedirectResponse(url=target, status_code=303)
+    res = RedirectResponse(url=target, status_code=303)
+    if m_id_clean:
+        res.set_cookie(key="mti_machine_id", value=m_id_clean, max_age=365*86400, httponly=False)
+    return res
 
 @app.get("/logout")
 def do_logout(request: Request):

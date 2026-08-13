@@ -590,7 +590,8 @@ async function handleAdminUploadReceipt(regId) {
                 const modalImg = document.getElementById('receiptModalImg');
                 const modalEmpty = document.getElementById('receiptModalEmpty');
                 if (modalImg) {
-                    modalImg.src = data.receipt_image_url + (data.receipt_image_url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                    const isB64 = data.receipt_image_url.startsWith('data:');
+                    modalImg.src = isB64 ? data.receipt_image_url : (data.receipt_image_url + (data.receipt_image_url.includes('?') ? '&' : '?') + 't=' + Date.now());
                     modalImg.style.display = 'block';
                 }
                 if (modalEmpty) {
@@ -1224,7 +1225,8 @@ async function handleKhqrUpload(e) {
             const data = await res.json();
             const preview = document.getElementById('khqrPreviewImg');
             if (preview) {
-                preview.src = data.khqr_image_url + '?t=' + Date.now();
+                const isB64 = (data.khqr_image_url || '').startsWith('data:');
+                preview.src = isB64 ? data.khqr_image_url : (data.khqr_image_url + '?t=' + Date.now());
                 preview.style.display = 'block';
             }
             alert("បាន Upload រូប KHQR ជោគជ័យ! (KHQR image uploaded successfully)");
