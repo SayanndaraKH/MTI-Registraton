@@ -210,11 +210,12 @@ def do_logout(request: Request):
 
 # HTML Pages Routes
 @app.get("/", response_class=HTMLResponse)
-def page_home(request: Request, db: Session = Depends(get_db), user: User = Depends(require_login)):
+def page_home(request: Request, response: Response, db: Session = Depends(get_db), user: User = Depends(require_login)):
     """
     The address handed out to students. Login is required here too, so opening
     the link lands on the login form first and never on the course list.
     """
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     all_courses = db.query(Course).order_by(Course.id.desc()).all()
     return templates.TemplateResponse(
         request,
@@ -226,9 +227,11 @@ def page_home(request: Request, db: Session = Depends(get_db), user: User = Depe
 def page_checkout(
     invoice_id: str,
     request: Request,
+    response: Response,
     db: Session = Depends(get_db),
     user: User = Depends(require_login),
 ):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return templates.TemplateResponse(
         request,
         "checkout.html",
@@ -239,6 +242,7 @@ def page_checkout(
 @app.get("/student", response_class=HTMLResponse)
 def page_student(
     request: Request,
+    response: Response,
     db: Session = Depends(get_db),
     user: User = Depends(require_login),
 ):
@@ -247,16 +251,18 @@ def page_student(
     kept separate so the address shared with students never hints at /admin.
     Students must sign in with the account the Admin created for them.
     """
-    active_courses = db.query(Course).filter(Course.is_active == True).order_by(Course.id.desc()).all()
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    all_courses = db.query(Course).order_by(Course.id.desc()).all()
     return templates.TemplateResponse(
         request,
         "index.html",
-        {"courses": active_courses, "settings": settings, "user": user},
+        {"courses": all_courses, "settings": settings, "user": user},
     )
 
 @app.get("/admin", response_class=HTMLResponse)
-def page_admin(request: Request, _admin: User = Depends(require_admin)):
+def page_admin(request: Request, response: Response, _admin: User = Depends(require_admin)):
     """Admin-only: anyone else is bounced to the login form, never shown the dashboard."""
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return templates.TemplateResponse(request, "admin.html", {"settings": settings})
 
 @app.exception_handler(401)
