@@ -38,13 +38,23 @@
         <input type="hidden" name="next" value="{{ next }}">
 
         <div class="form-group">
-          <label class="form-label" for="username">👤 ឈ្មោះគណនី (Username)</label>
+          <label class="form-label" for="username">👤 ឈ្មោះគណនី (Username) *</label>
           <input type="text" id="username" name="username" class="form-input" required autofocus autocomplete="username">
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="password">🔒 លេខសម្ងាត់ (Password)</label>
+          <label class="form-label" for="password">🔒 លេខសម្ងាត់ (Password) *</label>
           <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="full_name">📝 ឈ្មោះពេញ / ឈ្មោះផ្ទាល់ខ្លួន (Full Name)</label>
+          <input type="text" id="full_name" name="full_name" class="form-input" placeholder="ឧ. សុខ ចាន់ (Sok Chan)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="phone_number">📞 លេខទូរស័ព្ទ (Phone Number)</label>
+          <input type="tel" id="phone_number" name="phone_number" class="form-input" placeholder="ឧ. 012 345 678">
         </div>
 
         <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.75rem; padding:0.85rem;">

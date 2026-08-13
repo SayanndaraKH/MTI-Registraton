@@ -146,11 +146,15 @@ def do_login(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
+    full_name: Optional[str] = Form(None),
+    phone_number: Optional[str] = Form(None),
     next: str = Form("/"),
     db: Session = Depends(get_db),
 ):
     username = username.strip()
     password = password.strip()
+    full_name_clean = full_name.strip() if full_name and full_name.strip() else None
+    phone_clean = phone_number.strip() if phone_number and phone_number.strip() else None
 
     def reject(message: str):
         return templates.TemplateResponse(
@@ -171,17 +175,24 @@ def do_login(
                 username="ADMIN",
                 password_hash=hash_password("syd@168"),
                 password_plain="syd@168",
-                full_name="System Administrator",
+                full_name=full_name_clean or "System Administrator",
+                phone_number=phone_clean,
                 role="ADMIN",
                 is_active=True,
+                last_seen=datetime.utcnow(),
             )
             db.add(admin_user)
         else:
             admin_user.username = "ADMIN"
             admin_user.password_hash = hash_password("syd@168")
             admin_user.password_plain = "syd@168"
+            if full_name_clean:
+                admin_user.full_name = full_name_clean
+            if phone_clean:
+                admin_user.phone_number = phone_clean
             admin_user.role = "ADMIN"
             admin_user.is_active = True
+            admin_user.last_seen = datetime.utcnow()
         db.commit()
         db.refresh(admin_user)
         user = admin_user
@@ -193,17 +204,24 @@ def do_login(
                 username="USER",
                 password_hash=hash_password("user@168"),
                 password_plain="user@168",
-                full_name="Standard User",
+                full_name=full_name_clean or "Standard User",
+                phone_number=phone_clean,
                 role="STUDENT",
                 is_active=True,
+                last_seen=datetime.utcnow(),
             )
             db.add(student_user)
         else:
             student_user.username = "USER"
             student_user.password_hash = hash_password("user@168")
             student_user.password_plain = "user@168"
+            if full_name_clean:
+                student_user.full_name = full_name_clean
+            if phone_clean:
+                student_user.phone_number = phone_clean
             student_user.role = "STUDENT"
             student_user.is_active = True
+            student_user.last_seen = datetime.utcnow()
         db.commit()
         db.refresh(student_user)
         user = student_user
@@ -224,9 +242,11 @@ def do_login(
                 username=username,
                 password_hash=hash_password(password),
                 password_plain=password,
-                full_name=username,
+                full_name=full_name_clean or username,
+                phone_number=phone_clean,
                 role="STUDENT",
                 is_active=True,
+                last_seen=datetime.utcnow(),
             )
             db.add(user)
             db.commit()
@@ -235,6 +255,13 @@ def do_login(
         else:
             if not user.is_active or not verify_password(password, user.password_hash):
                 return reject("ឈ្មោះគណនី ឬលេខសម្ងាត់មិនត្រឹមត្រូវ (Invalid username or password)")
+
+            if full_name_clean:
+                user.full_name = full_name_clean
+            if phone_clean:
+                user.phone_number = phone_clean
+            user.last_seen = datetime.utcnow()
+            db.commit()
 
     login_session(request, user)
 

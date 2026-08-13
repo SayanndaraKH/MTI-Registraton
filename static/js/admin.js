@@ -203,7 +203,7 @@ async function loadUsers() {
 
         tbody.innerHTML = '';
         if (users.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:2rem;">ពុំមានគណនីទេ (No accounts found)</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:2rem;">ពុំមានគណនីទេ (No accounts found)</td></tr>`;
             return;
         }
 
@@ -214,6 +214,10 @@ async function loadUsers() {
             const activeBadge = u.is_active
                 ? `<span class="status-badge status-paid">✓ Active</span>`
                 : `<span class="status-badge status-rejected">✕ Disabled</span>`;
+
+            const lastLoginTag = u.last_seen
+                ? `<span style="font-size:0.8rem; color:#10b981; font-family:monospace;">🟢 ${escapeHtml(u.last_seen)}</span>`
+                : `<span style="font-size:0.8rem; color:#64748b;">— (មិនទាន់ចូល)</span>`;
 
             // Hidden until clicked, so the password is not on show over someone's shoulder.
             const pwCell = u.password_plain
@@ -228,9 +232,11 @@ async function loadUsers() {
                 <td style="white-space:nowrap;"><code>${u.id}</code></td>
                 <td><strong>${escapeHtml(u.username)}</strong></td>
                 <td style="white-space:nowrap;">${pwCell}</td>
-                <td>${escapeHtml(u.full_name || '—')}</td>
+                <td><strong>${escapeHtml(u.full_name || '—')}</strong></td>
+                <td style="white-space:nowrap;"><code>${escapeHtml(u.phone_number || '—')}</code></td>
                 <td style="white-space:nowrap;">${roleBadge}</td>
                 <td style="white-space:nowrap;">${activeBadge}</td>
+                <td style="white-space:nowrap;">${lastLoginTag}</td>
                 <td>
                     <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:nowrap;">
                         <button onclick="editUser(${u.id})" class="btn btn-outline btn-sm">✏️ Edit</button>

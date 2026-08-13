@@ -57,6 +57,7 @@ def _serialize(u: User) -> dict:
         "password_plain": u.password_plain,  # shown in the dashboard so Admin can re-send it
         "role": u.role,
         "is_active": u.is_active,
+        "last_seen": u.last_seen.strftime("%Y-%m-%d %H:%M:%S") if u.last_seen else None,
         "created_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if u.created_at else None,
     }
 
