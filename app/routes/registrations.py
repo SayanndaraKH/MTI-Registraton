@@ -55,6 +55,15 @@ def register_student(
         currency = "USD"
         amount = course.price_usd
 
+    # Sync student details to User account profile
+    if user:
+        if reg_in.student_name and (not user.full_name or user.full_name == user.username):
+            user.full_name = reg_in.student_name.strip()
+        if reg_in.phone_number and not user.phone_number:
+            user.phone_number = reg_in.phone_number.strip()
+        if reg_in.telegram_username and not user.telegram_username:
+            user.telegram_username = reg_in.telegram_username.strip().lstrip("@")
+
     # Create DB registration
     db_reg = Registration(
         invoice_id=invoice_id,
