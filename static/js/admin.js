@@ -630,35 +630,65 @@ function closeReceiptModal() {
 
 // ---------- Printable Official Receipt Modal Handlers ----------
 
-function openPrintReceiptModal(regId) {
-    const r = window.registrationsMap ? window.registrationsMap[regId] : null;
+async function openPrintReceiptModal(regId) {
+    let r = window.registrationsMap ? window.registrationsMap[regId] : null;
+    if (!r) {
+        try {
+            const res = await fetch(`/api/v1/admin/registrations/${regId}`);
+            if (res.ok) {
+                r = await res.json();
+            }
+        } catch (e) {
+            console.error('Fetch registration error:', e);
+        }
+    }
+
     if (!r) {
         return alert('ពុំមានទិន្នន័យសម្រាប់បោះពុម្ពទេ (Registration data not found)');
     }
 
+    window.currentReceiptId = regId;
+
     // Populate Receipt Metadata
-    document.getElementById('rcpInvoiceId').innerText = r.invoice_id || ('INV-' + String(r.id).padStart(6, '0'));
+    const rcpInvoiceId = document.getElementById('rcpInvoiceId');
+    if (rcpInvoiceId) rcpInvoiceId.innerText = r.invoice_id || ('INV-' + String(r.id).padStart(6, '0'));
     
     let dateStr = '13-Aug-2026';
     if (r.created_at) {
-        const d = new Date(r.created_at);
-        dateStr = d.toLocaleDateString('km-KH', { year: 'numeric', month: 'short', day: 'numeric' });
+        try {
+            const d = new Date(r.created_at);
+            dateStr = d.toLocaleDateString('km-KH', { year: 'numeric', month: 'short', day: 'numeric' });
+        } catch (e) {
+            dateStr = String(r.created_at).split('T')[0];
+        }
     }
-    document.getElementById('rcpDate').innerText = dateStr;
-    document.getElementById('rcpStatus').innerText = r.status === 'PAID' ? '✓ បានទូទាត់ប្រាក់រួច (PAID)' : ('' + r.status);
+    const rcpDate = document.getElementById('rcpDate');
+    if (rcpDate) rcpDate.innerText = dateStr;
+
+    const rcpStatus = document.getElementById('rcpStatus');
+    if (rcpStatus) rcpStatus.innerText = r.status === 'PAID' ? '✓ បានទូទាត់ប្រាក់រួច (PAID)' : ('' + r.status);
 
     // Populate Student Info
-    document.getElementById('rcpStudentName').innerText = r.student_name || '—';
-    document.getElementById('rcpStudentPhone').innerText = r.phone_number || '—';
+    const rcpStudentName = document.getElementById('rcpStudentName');
+    if (rcpStudentName) rcpStudentName.innerText = r.student_name || '—';
+
+    const rcpStudentPhone = document.getElementById('rcpStudentPhone');
+    if (rcpStudentPhone) rcpStudentPhone.innerText = r.phone_number || '—';
     
     const tg = r.telegram_username ? (r.telegram_username.startsWith('@') ? r.telegram_username : '@' + r.telegram_username) : '—';
-    document.getElementById('rcpStudentTelegram').innerText = tg;
-    document.getElementById('rcpStudentSigName').innerText = r.student_name || '........................................';
+    const rcpStudentTelegram = document.getElementById('rcpStudentTelegram');
+    if (rcpStudentTelegram) rcpStudentTelegram.innerText = tg;
+
+    const rcpStudentSigName = document.getElementById('rcpStudentSigName');
+    if (rcpStudentSigName) rcpStudentSigName.innerText = r.student_name || '........................................';
 
     // Populate Course & Class Schedule Info
     const courseTitle = r.course_title || '—';
-    document.getElementById('rcpCourseTitle').innerText = courseTitle;
-    document.getElementById('rcpItemDesc').innerText = `ថ្លៃសិក្សាវគ្គ ${courseTitle}`;
+    const rcpCourseTitle = document.getElementById('rcpCourseTitle');
+    if (rcpCourseTitle) rcpCourseTitle.innerText = courseTitle;
+
+    const rcpItemDesc = document.getElementById('rcpItemDesc');
+    if (rcpItemDesc) rcpItemDesc.innerText = `ថ្លៃសិក្សាវគ្គ ${courseTitle}`;
 
     // Find course details in global courses array if available
     let classStart = '15-Aug-2026';
@@ -672,20 +702,31 @@ function openPrintReceiptModal(regId) {
         if (c.duration) duration = c.duration;
     }
 
-    document.getElementById('rcpClassStartDate').innerText = classStart;
-    document.getElementById('rcpClassTime').innerText = classTime;
-    document.getElementById('rcpCourseDuration').innerText = duration;
+    const rcpClassStartDate = document.getElementById('rcpClassStartDate');
+    if (rcpClassStartDate) rcpClassStartDate.innerText = classStart;
+
+    const rcpClassTime = document.getElementById('rcpClassTime');
+    if (rcpClassTime) rcpClassTime.innerText = classTime;
+
+    const rcpCourseDuration = document.getElementById('rcpCourseDuration');
+    if (rcpCourseDuration) rcpCourseDuration.innerText = duration;
 
     // Financial Breakdown
     const curr = r.currency || 'USD';
-    const amountVal = r.amount ? (curr === 'USD' ? `$${r.amount.toFixed(2)}` : `${r.amount.toLocaleString()} KHR`) : '$0.00';
-    document.getElementById('rcpItemAmount').innerText = amountVal;
-    document.getElementById('rcpTotalAmount').innerText = amountVal;
+    const numAmount = typeof r.amount === 'number' ? r.amount : parseFloat(r.amount || 0);
+    const amountVal = numAmount ? (curr === 'USD' ? `$${numAmount.toFixed(2)}` : `${numAmount.toLocaleString()} KHR`) : '$0.00';
+    
+    const rcpItemAmount = document.getElementById('rcpItemAmount');
+    if (rcpItemAmount) rcpItemAmount.innerText = amountVal;
+
+    const rcpTotalAmount = document.getElementById('rcpTotalAmount');
+    if (rcpTotalAmount) rcpTotalAmount.innerText = amountVal;
 
     // Show modal
     const modal = document.getElementById('printReceiptModal');
     if (modal) {
         modal.style.display = 'flex';
+        modal.classList.add('active');
     }
 }
 
