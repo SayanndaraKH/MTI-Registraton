@@ -690,16 +690,35 @@ async function openPrintReceiptModal(regId) {
     const rcpItemDesc = document.getElementById('rcpItemDesc');
     if (rcpItemDesc) rcpItemDesc.innerText = `ថ្លៃសិក្សាវគ្គ ${courseTitle}`;
 
-    // Find course details in global courses array if available
-    let classStart = '15-Aug-2026';
-    let classTime = '2:00 PM - 4:00 PM (ច័ន្ទ - សុក្រ)';
-    let duration = '3 ខែ (3 Months)';
+    // Fetch live course list dynamically to guarantee exact Poster schedule details
+    let matchedCourse = null;
+    try {
+        const cRes = await fetch('/api/v1/courses?active_only=false');
+        if (cRes.ok) {
+            const allCourses = await cRes.json();
+            if (r.course_id) {
+                matchedCourse = allCourses.find(c => c.id === r.course_id);
+            }
+            if (!matchedCourse && r.course_title) {
+                const titleLower = r.course_title.trim().toLowerCase();
+                matchedCourse = allCourses.find(c => c.title && c.title.trim().toLowerCase() === titleLower);
+                if (!matchedCourse) {
+                    matchedCourse = allCourses.find(c => c.title && (c.title.toLowerCase().includes(titleLower) || titleLower.includes(c.title.toLowerCase())));
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Course lookup error:', e);
+    }
 
-    if (window.coursesMap && r.course_id && window.coursesMap[r.course_id]) {
-        const c = window.coursesMap[r.course_id];
-        if (c.class_start_date) classStart = c.class_start_date;
-        if (c.class_time) classTime = c.class_time;
-        if (c.duration) duration = c.duration;
+    let classStart = '14-Aug-2026';
+    let classTime = '8:00 PM - 9:30 PM (យប់)';
+    let duration = '4 សប្តាហ៍ (4 Weeks)';
+
+    if (matchedCourse) {
+        if (matchedCourse.class_start_date) classStart = matchedCourse.class_start_date;
+        if (matchedCourse.class_time) classTime = matchedCourse.class_time;
+        if (matchedCourse.duration) duration = matchedCourse.duration;
     }
 
     const rcpClassStartDate = document.getElementById('rcpClassStartDate');
