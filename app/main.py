@@ -352,7 +352,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     traceback.print_exc()
 
     wants_html = "text/html" in request.headers.get("accept", "")
-    if wants_html and request.method == "GET":
+    if wants_html:
         return templates.TemplateResponse(
             request,
             "login.html",
