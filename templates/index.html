@@ -52,7 +52,10 @@
         {% for course in courses %}
         <div class="course-card">
           <div class="course-img-wrapper">
-            <img src="{{ course.image_url or 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=60' }}" alt="{{ course.title }}" class="course-img">
+            <img src="{{ course.image_url or 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=60' }}" 
+                 alt="{{ course.title }}" 
+                 class="course-img"
+                 onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=60';">
             <span class="course-tag">
               {% if course.is_active %}
                 ⏱️ {{ course.duration }}

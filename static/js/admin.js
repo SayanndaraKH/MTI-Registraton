@@ -606,8 +606,10 @@ async function loadCourses() {
                 </div>`;
             }
 
+            const defaultImg = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=60';
+            const imgUrl = c.image_url || defaultImg;
             card.innerHTML = `
-                ${c.image_url ? `<img src="${escapeHtml(c.image_url)}" alt="${escapeHtml(c.title)}" style="width:100%; height:150px; object-fit:cover; border-radius:var(--radius-md) var(--radius-md) 0 0;">` : ''}
+                <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(c.title)}" onerror="this.onerror=null; this.src='${defaultImg}';" style="width:100%; height:150px; object-fit:cover; border-radius:var(--radius-md) var(--radius-md) 0 0;">
                 <div class="course-body">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
                         <h3 class="course-title" style="margin-bottom:0; flex:1;">${escapeHtml(c.title)}</h3>
