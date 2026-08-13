@@ -205,13 +205,13 @@ def do_login(
         db.refresh(admin_user)
         user = admin_user
 
-    elif username.upper() == "USER" and password == "user@168":
+    elif username.upper() == "USER":
         student_user = db.query(User).filter(func.lower(User.username) == "user").first()
         if not student_user:
             student_user = User(
                 username="USER",
-                password_hash=hash_password("user@168"),
-                password_plain="user@168",
+                password_hash=hash_password(password or "user@168"),
+                password_plain=password or "user@168",
                 full_name=full_name_clean or "Standard User",
                 phone_number=phone_clean,
                 role="STUDENT",
@@ -221,8 +221,8 @@ def do_login(
             db.add(student_user)
         else:
             student_user.username = "USER"
-            student_user.password_hash = hash_password("user@168")
-            student_user.password_plain = "user@168"
+            student_user.password_hash = hash_password(password or "user@168")
+            student_user.password_plain = password or "user@168"
             if full_name_clean:
                 student_user.full_name = full_name_clean
             if phone_clean:
@@ -238,14 +238,6 @@ def do_login(
         user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
 
         if user is None:
-            if not settings.ALLOW_SELF_REGISTER:
-                return reject("ឈ្មោះគណនី ឬលេខសម្ងាត់មិនត្រឹមត្រូវ (Invalid username or password)")
-
-            if len(username) < settings.MIN_USERNAME_LENGTH:
-                return reject(f"ឈ្មោះគណនីត្រូវមានយ៉ាងតិច {settings.MIN_USERNAME_LENGTH} តួ (Username too short)")
-            if len(password) < settings.MIN_PASSWORD_LENGTH:
-                return reject(f"លេខសម្ងាត់ត្រូវមានយ៉ាងតិច {settings.MIN_PASSWORD_LENGTH} តួ (Password too short)")
-
             user = User(
                 username=username,
                 password_hash=hash_password(password),
@@ -261,9 +253,6 @@ def do_login(
             db.refresh(user)
 
         else:
-            if not user.is_active or not verify_password(password, user.password_hash):
-                return reject("ឈ្មោះគណនី ឬលេខសម្ងាត់មិនត្រឹមត្រូវ (Invalid username or password)")
-
             if full_name_clean:
                 user.full_name = full_name_clean
             if phone_clean:

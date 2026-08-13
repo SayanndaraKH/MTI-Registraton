@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # First-time visitors may pick their own username and password at the login
     # form; that first attempt creates the account. Turn off to make the Admin
     # the only one who can create accounts.
-    ALLOW_SELF_REGISTER: bool = False
+    ALLOW_SELF_REGISTER: bool = True
     MIN_USERNAME_LENGTH: int = 3
     MIN_PASSWORD_LENGTH: int = 4
 
