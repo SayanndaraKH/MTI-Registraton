@@ -238,6 +238,22 @@ async function copyAccessCode(code) {
     }
 }
 
+async function approveCurrentReceipt() {
+    const regId = window.currentReceiptId;
+    if (!regId) {
+        return showAlert("សូមជ្រើសរើសវិក័យបត្រជាមុនសិន! (Please select a receipt)", "Notice", "warning");
+    }
+    await approveRegistration(regId);
+}
+
+async function rejectCurrentReceipt() {
+    const regId = window.currentReceiptId;
+    if (!regId) {
+        return showAlert("សូមជ្រើសរើសវិក័យបត្រជាមុនសិន! (Please select a receipt)", "Notice", "warning");
+    }
+    await rejectRegistration(regId);
+}
+
 async function approveRegistration(regId) {
     const modalBtn = document.getElementById('receiptAcceptBtn');
     if (modalBtn) {
