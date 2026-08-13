@@ -1,0 +1,14 @@
+សូមចុច Double-Click លើឯកសារ 
+
+Run.bat
+ ឡើងវិញ។
+
+ប្រសិនបើអ្នកចង់បើកមើលដោយផ្ទាល់នៅលើ Browser៖
+
+ទំព័រសិស្ស (Student Portal): http://127.0.0.1:8000
+ទំព័រគ្រប់គ្រង (Admin Dashboard): http://127.0.0.1:8000/admin
+API Documentation: http://127.0.0.1:8000/docs
+
+https://t.me/sydadmin168
+https://t.me/+EbrzO0XTu55hZDk1
+092800104

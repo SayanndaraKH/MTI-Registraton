@@ -1,0 +1,82 @@
+នេះជាគំនិតដ៏ល្អមែនទែន! ការរៀបចំប្រព័ន្ធស្វ័យប្រវត្តិបែបនេះ នឹងជួយសន្សំពេលវេលាអ្នកបានច្រើន និងធ្វើឲ្យដំណើរការលក់វគ្គសិក្សាកាន់តែមានភាពរលូន។
+This is a great idea! Setting up an automated system like this will save you a lot of time and make the course sales process smoother.
+
+ខ្ញុំសន្មតថាអ្នកចង់មានន័យថា KHQR (ប្រព័ន្ធទូទាត់ប្រាក់របស់កម្ពុជា) ជំនួសឲ្យ HKQR ត្រូវទេ?
+I guess you mean " KHQR  (Cambodian payment system) instead of HKQR, right?"
+
+ដើម្បីឲ្យកម្មវិធីនេះដំណើរការបានល្អឥតខ្ចោះ ទាំងនេះជាមុខងារសំខាន់ៗដែលអ្នកគួររៀបចំ និងបច្ចេកវិទ្យា Python ដែលពាក់ព័ន្ធ៖
+To make this program work perfectly, these are the main functions you should set up and related Python technology:
+
+១. មុខងារសំខាន់ៗដែលគួរមាន (Core Features)
+1. Core Features
+កាតាឡុកវគ្គសិក្សា (Course Catalog): កន្លែងបង្ហាញវគ្គខ្លីៗ និងកម្មវិធីដែលអ្នកលក់ (ឈ្មោះវគ្គ, អត្ថប្រយោជន៍, តម្លៃ)។
+ Course Catalog:  A place to display short courses and programs that you sell (course name, benefits, price).
+
+ប្រព័ន្ធចុះឈ្មោះ (Registration System): ទាមទារឲ្យសិស្សបញ្ចូលព័ត៌មាន (ឈ្មោះ, លេខទូរស័ព្ទ, ឈ្មោះគណនី Telegram)។
+ Registration System:  requires students to enter information (name, phone number, Telegram account name).
+
+ការទូទាត់ប្រាក់តាម KHQR (Dynamic KHQR Payment): ប្រព័ន្ធគួរតែបង្កើត KHQR Code ស្វ័យប្រវត្តិដែលមានភ្ជាប់តម្លៃ និងលេខកូដសម្គាល់ប្រតិបត្តិការ (Invoice ID) ដើម្បីងាយស្រួលផ្ទៀងផ្ទាត់។
+ Dynamic KHQR Payment:  The system should automatically generate a KHQR Code with a value and Invoice ID for easy verification.
+
+ការផ្ទៀងផ្ទាត់ការបង់ប្រាក់ (Payment Verification): អ្នកអាចភ្ជាប់ API របស់ធនាគារ (ដូចជា ABA PayWay ឬ Bakong) ដើម្បីឲ្យប្រព័ន្ធដឹងថាលុយចូលភ្លាមៗដោយស្វ័យប្រវត្តិ។
+ Payment Verification:  You can connect to the bank's API (such as ABA PayWay or Bakong) to let the system know that the money is deposited automatically.
+
+ប្រព័ន្ធគ្រប់គ្រងតំណភ្ជាប់ (Invite Link Manager): បង្កើត Link ចូលក្រុម Telegram ប្រភេទ "One-time use" (ប្រើបានតែម្តង) ដើម្បីការពារកុំឲ្យសិស្សយក Link នោះទៅចែករំលែកបន្តឲ្យអ្នកផ្សេង។
+ Invite Link Manager:  Create a link to the Telegram group "One-time use" to prevent students from sharing the link with others.
+
+ផ្ទាំងគ្រប់គ្រងសម្រាប់អ្នក (Admin Dashboard): សម្រាប់មើលទិន្នន័យសិស្ស ចំណូល និងគ្រប់គ្រងវគ្គសិក្សា។
+ Admin Dashboard:  View student earnings and course management data.
+
+២. បច្ចេកវិទ្យា Python ដែលគួរប្រើ (Tech Stack)
+2. Python technology that should be used (Tech Stack)
+Web Framework: ប្រើ FastAPI ឬ Flask ព្រោះវាលឿន និងងាយស្រួលក្នុងការធ្វើការជាមួយ Webhooks របស់ Telegram និងធនាគារ។
+ Web Framework:  Use  FastAPI  or  Flask  because it is fast and easy to work with Telegram and Bank Webhooks.
+
+Telegram Bot Integration: ប្រើបណ្ណាល័យ aiogram ឬ python-telegram-bot សម្រាប់ទទួលការជូនដំណឹង និងផ្ញើសារអន្តរកម្ម។
+ Telegram Bot Integration:  Use the aiogram or python-telegram-bot library to receive notifications and interactive messages.
+
+Database: ប្រើ SQLite (សម្រាប់ចាប់ផ្តើម) ឬ PostgreSQL ដើម្បីរក្សាទុកទិន្នន័យសិស្ស និងប្រវត្តិបង់ប្រាក់។
+ Database:  Use  SQLite  (for starters) or  PostgreSQL  to store student data and payment history.
+
+Payment (KHQR): ប្រើបណ្ណាល័យ khqr (Python package មួយចំនួនមានស្រាប់លើ GitHub) ដើម្បី Generate QR code មុននឹងភ្ជាប់ API ធនាគារពិតប្រាកដ។
+ Payment (KHQR):  Use the khqr library (some Python packages are already available on GitHub) to generate QR code before connecting to the actual banking API.
+
+៣. លំហូរនៃដំណើរការ (User Flow)
+3. User Flow
+នេះជារបៀបដែលប្រព័ន្ធនឹងដំណើរការពីដើមដល់ចប់៖
+Here's how the system works from start to finish:
+
+1
+ជ្រើសរើសវគ្គ និងចុះឈ្មោះ
+Select course and register
+សិស្សចូលទៅកាន់កម្មវិធី (ឬ Chat ជាមួយ Bot) រួចជ្រើសរើសវគ្គសិក្សា និងបញ្ចូលព័ត៌មានផ្ទាល់ខ្លួន។
+Students go to the program (or Chat with a Bot) and select a course and enter personal information.
+
+2
+បង្កើត KHQR Code សម្រាប់បង់ប្រាក់
+Generate KHQR Code for payment
+ប្រព័ន្ធ Python នឹងបង្កើត KHQR Code មួយដែលមានទំហំទឹកប្រាក់ពិតប្រាកដ រួចបង្ហាញទៅកាន់សិស្សដើម្បីធ្វើការស្កេន។
+The Python system will generate a KHQR Code with the actual amount and show it to the students for scanning.
+
+3
+ផ្ទៀងផ្ទាត់ការទូទាត់ស្វ័យប្រវត្តិ
+Verify automatic payment
+ពេលសិស្សវេរលុយរួចរាល់ API ធនាគារនឹងបញ្ជូនសញ្ញា (Webhook) មកកាន់កម្មវិធី Python របស់អ្នកថាការបង់ប្រាក់ជោគជ័យ។
+When the student completes the payment, the banking API will send a Webhook to your Python application stating that the payment was successful.
+
+4
+ផ្ញើសារជូនដំណឹងដល់អ្នក (Admin)
+Send you notification message (Admin)
+កម្មវិធីនឹងបញ្ជាទៅ Telegram Bot ឲ្យផ្ញើសារមកកាន់គណនី Telegram របស់អ្នកភ្លាមៗ (ឧ. "មានសិស្សឈ្មោះ កា កា បានទិញវគ្គ A, លុយចូល $15")។
+The program will instruct the Telegram Bot to send a message to your Telegram account immediately (e.g., "A student named Kaka purchased A, $ 15 in revenue").
+
+5
+ផ្ញើ Link ចូលក្រុមដល់សិស្ស
+Send Link to Student Group
+Telegram Bot ដូចគ្នានឹងផ្ញើសារទៅកាន់សិស្ស ព្រមទាំងភ្ជាប់មកជាមួយនូវ Invite Link (ដែលចូលបានតែម្តង) ដើម្បីឲ្យពួកគេ Join ចូល Private Group របស់អ្នកជាការស្រេច។
+The same Telegram Bot will send a message to students and come with an Invite Link (one-time login) to get them to join your Private Group.
+
+តើអ្នកចង់បង្កើតកម្មវិធីនេះជាទម្រង់ Web Website ឫចង់ឲ្យដំណើរការលើ Telegram Bot ទាំងស្រុងតែម្តង?
+Do you want to create this program as a Web Website or want to run on Telegram Bot completely?
+
+Yes

@@ -1,0 +1,59 @@
+ដើម្បីអនុញ្ញាតឱ្យ User នៅលើ PC ឬ Mobile ផ្សេងៗទៀតអាចចូលប្រើប្រាស់ប្រព័ន្ធ MTI Registration បាន ២៤ម៉ោង/៧ថ្ងៃ (24/7 Online) ទោះបីជាបិទកុំព្យូទ័រលោកអ្នក ឬ Offline ក៏ដោយ ខ្ញុំបានរៀបចំរចនាសម្ព័ន្ធ និងឯកសារ Cloud Hosting (Render / Firebase / Google Cloud Run) រួចរាល់ក្នុង Folder នេះ៖
+
+🌐 ជម្រើស Hosting ដែលឥតគិតថ្លៃ និងងាយស្រួលបំផុត (Recommended 24/7 Hosting Options)
+ដោយសារកម្មវិធីនេះដើរដោយ Python FastAPI Backend + Database ៖
+
+ជម្រើសទី ១ ៖ Hosting លើ Render.com (ងាយស្រួលបំផុត & Free 24/7)
+
+Render គាំទ្រ Python FastAPI Backend ដោយផ្ទាល់ ឥតគិតថ្លៃ និងរត់ ២៤ម៉ោងលើ Cloud។
+របៀបធ្វើ ៖
+Push កូដក្នុង Folder នេះទៅកាន់ GitHub Repository របស់អ្នក។
+ចូលទៅកាន់ Render.com ➡️ បង្កើត Web Service ថ្មី ភ្ជាប់ជាមួយ GitHub នោះ។
+លោកអ្នកនឹងទទួលបាន Link Public (ឧ. https://mti-registration.onrender.com) អាចផ្ញើទៅកាន់ User លើ PC ផ្សេងៗប្រើបាន ២៤ម៉ោងភ្លាមៗ!
+ជម្រើសទី ២ ៖ Hosting លើ Firebase + Google Cloud Run (Official Firebase)
+
+ប្រសិនបើចង់បាន Domain ផ្លូវការរបស់ Firebase (.web.app) លោកអ្នកអាច Deploy Python Backend ទៅ Google Cloud Run ហើយតភ្ជាប់ជាមួយ Firebase Hosting បានយ៉ាងងាយស្រួល។
+
+📁 ឯកសារ Cloud Deployment ដែលបានបង្កើតជូនរៀបរយក្នុង Project ៖
+123456789
+sayanndara2022@gmail.com
+
+HR6i2hyD4VSa
+Admin
+https://mti-registraton.onrender.com
+Dockerfile
+ ៖ សម្រាប់ Container Deployment (Cloud Run / Docker)
+
+render.yaml
+ ៖ សម្រាប់ 1-Click Auto Deployment លើ Render.com
+
+firebase.json
+ ៖ សម្រាប់ Firebase Hosting Rewrites
+cloud_deployment_guide.md
+ ៖ សៀវភៅណែនាំលម្អិត ជំហាន២-៣ ក្នុងការយកកូដទៅកាន់ Cloud ២៤ម៉ោង!
+
+ Render.com
+មិនបាច់ចាត់ចែង Deploy ឡើងវិញជាថ្មី ឬបង្កើត Web Service ថ្មីរាល់ដងនោះឡើយ! Render ដំណើរការដោយ Auto-Deploy (អូតូម៉ាតិច) ៖
+
+🔄 របៀបដែល Render ធ្វើការរាល់ពេលមាន Update Code ថ្មី ៖
+Auto-Deploy ដោយស្វ័យប្រវត្តិ:
+នៅពេលលោកអ្នកកែប្រែកូដ ឬបន្ថែមមុខងារថ្មីៗនៅលើកុំព្យូទ័រលោកអ្នក ៖
+លោកអ្នកគ្រាន់តែ Upload / Commit ឯកសារដែលបានកែប្រែនោះ ចូលទៅកាន់ GitHub Repository ដដែល (MTI-Registraton)។
+Render នឹងដឹងភ្លាមៗ ហើយធ្វើការ Re-build និង Update វេបសាយ Live របស់អ្នកដោយស្វ័យប្រវត្តិតែម្តង ក្នុងរយ:ពេល ១-២ នាទី!
+👆 ករណីចង់ចុច Deploy ភ្លាមៗដោយផ្ទាល់ដៃ (Manual Deploy):
+ប្រសិនបើលោកអ្នកចង់ឱ្យ Render Update ភ្លាមៗដោយមិនចាំបាច់រង់ចាំ លោកអ្នកគ្រាន់តែចូលទៅ Render Dashboard ➡️ ចុចប៊ូតុង "Manual Deploy" ➡️ ជ្រើសរើស "Deploy latest commit" ជាការស្រេច!
+
+
+🔍 មូលហេតុ (Root Cause) ៖
+Render រកមិនឃើញឯកសារ requirements.txt នៅលើ GitHub Repository របស់អ្នក ពីព្រោះពេល Upload ចូល GitHub លោកអ្នកអាចភ្លេច Upload ឯកសារ requirements.txt ឬកូដស្ថិតនៅក្នុង Sub-Folder ខាងក្នុង។
+
+🛠️ របៀបដោះស្រាយយ៉ាងងាយស្រួល (How to Fix in 1 Minute) ៖
+វិធីទី ១ ( Upload ឯកសារ requirements.txt ចូល GitHub ) ៖
+បើកទៅកាន់ GitHub របស់អ្នក ➡️ https://github.com/SayanndaraKH/MTI-Registraton
+ចុច Add file ➡️ ជ្រើសរើស Upload files។
+ទាញ ឯកសារ requirements.txt (ដែលនៅក្នុង c:\Users\Administrator\Desktop\MTI-Registraton) ចូលទៅក្នុង GitHub នោះ។
+ចុចប៊ូតុងពណ៌បៃតង Commit changes។
+Render នឹងឃើញ requirements.txt ហើយចាប់ផ្តើម Build ជោគជ័យដោយស្វ័យប្រវត្តិតែម្តង!
+វិធីទី ២ (ប្រសិនបើកូដរបស់អ្នកស្ថិតនៅក្នុង Folder ខាងក្នុង GitHub) ៖
+ប្រសិនបើនៅលើ GitHub លោកអ្នកឃើញកូដទាំងអស់នៅក្នុង Folder ឈ្មោះ MTI-Registraton ៖
+នៅលើ Render Dashboard ➡️ ចូលទៅកាន់ Settings ➡️ ត្រង់កន្លែង Root Directory វាយបញ្ចូលពាក្យ ៖ MTI-Registraton រួចចុច Save Changes ជាការស្រេច!
