@@ -12,6 +12,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(100), unique=True, index=True, nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=True)     # Google Email address
     password_hash = Column(String(255), nullable=False)
     # Readable copy of the same password, shown in the dashboard so the Admin can
     # re-read and re-send the shared login. Deliberate trade-off: the hash above is
@@ -21,6 +22,8 @@ class User(Base):
     phone_number = Column(String(50), nullable=True)
     telegram_username = Column(String(100), nullable=True)
     role = Column(String(20), default="STUDENT")  # ADMIN or STUDENT
+    failed_attempts = Column(Integer, default=0)    # Consecutive failed password attempts counter
+    lockout_until = Column(DateTime, nullable=True)   # Timestamp until 2-hour login lockout expires
     is_active = Column(Boolean, default=True)
     last_seen = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)

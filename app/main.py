@@ -1,6 +1,6 @@
 import os
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, Request, Depends, Form
@@ -47,9 +47,8 @@ app.add_middleware(
     session_cookie="mti_session",
     same_site="lax",
     https_only=False,  # served over plain HTTP on the LAN
-    # max_age=None makes this a browser-session cookie: closing the browser
-    # signs the student out, so re-opening the link always asks for the login.
-    max_age=None,
+    # Persistent session cookie (30 days): auto sign-in on re-opening browser
+    max_age=30 * 86400,
 )
 
 # Ensure directories exist
@@ -175,8 +174,8 @@ def do_login(
     next: str = Form("/"),
     db: Session = Depends(get_db),
 ):
-    username = username.strip()
-    password = password.strip()
+    username_clean = username.strip()
+    password_clean = password.strip()
     full_name_clean = full_name.strip() if full_name and full_name.strip() else None
     phone_clean = phone_number.strip() if phone_number and phone_number.strip() else None
 
@@ -188,8 +187,15 @@ def do_login(
             status_code=401,
         )
 
-    # Auto-heal / guaranteed default credentials
-    if username.upper() == "ADMIN" and password == "syd@168":
+    # 1. Deprecate default 'USER' / 'user@168'
+    if username_clean.upper() == "USER":
+        return reject("គណនី 'USER' ត្រូវបិទមិនឱ្យប្រើប្រាស់ទៀតឡើយ — សូមប្រើប្រាស់ Google Email របស់អ្នកដើម្បី Sign in ឬ Sign up វិញ! ('USER' account is deprecated - please use your Google Email)")
+
+    # 2. ADMIN account handler
+    if username_clean.upper() == "ADMIN":
+        if password_clean != (settings.ADMIN_PASSWORD or "syd@168"):
+            return reject("លេខសម្ងាត់ Admin មិនត្រឹមត្រូវទេ! (Incorrect Admin Password)")
+
         admin_user = db.query(User).filter(func.lower(User.username) == "admin").first()
         if not admin_user:
             admin_user = db.query(User).filter(User.role == "ADMIN").first()
@@ -197,8 +203,9 @@ def do_login(
         if not admin_user:
             admin_user = User(
                 username="ADMIN",
-                password_hash=hash_password("syd@168"),
-                password_plain="syd@168",
+                email="admin@mtiacademy.com",
+                password_hash=hash_password(password_clean),
+                password_plain=password_clean,
                 full_name=full_name_clean or "System Administrator",
                 phone_number=phone_clean,
                 role="ADMIN",
@@ -208,8 +215,8 @@ def do_login(
             db.add(admin_user)
         else:
             admin_user.username = "ADMIN"
-            admin_user.password_hash = hash_password("syd@168")
-            admin_user.password_plain = "syd@168"
+            admin_user.password_hash = hash_password(password_clean)
+            admin_user.password_plain = password_clean
             if full_name_clean:
                 admin_user.full_name = full_name_clean
             if phone_clean:
@@ -221,60 +228,70 @@ def do_login(
         db.refresh(admin_user)
         user = admin_user
 
-    elif username.upper() == "USER":
-        student_user = db.query(User).filter(func.lower(User.username) == "user").first()
-        if not student_user:
-            student_user = User(
-                username="USER",
-                password_hash=hash_password(password or "user@168"),
-                password_plain=password or "user@168",
-                full_name=full_name_clean or "Standard User",
-                phone_number=phone_clean,
-                role="STUDENT",
-                is_active=True,
-                last_seen=datetime.utcnow(),
-            )
-            db.add(student_user)
-        else:
-            student_user.username = "USER"
-            student_user.password_hash = hash_password(password or "user@168")
-            student_user.password_plain = password or "user@168"
-            if full_name_clean:
-                student_user.full_name = full_name_clean
-            if phone_clean:
-                student_user.phone_number = phone_clean
-            student_user.role = "STUDENT"
-            student_user.is_active = True
-            student_user.last_seen = datetime.utcnow()
-        db.commit()
-        db.refresh(student_user)
-        user = student_user
-
     else:
-        user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
+        # 3. Google Email / Standard Student Login & Auto Signup
+        email_clean = username_clean.lower()
+        now = datetime.utcnow()
 
-        if user is None:
+        user = db.query(User).filter(
+            (func.lower(User.username) == email_clean) | (func.lower(User.email) == email_clean)
+        ).first()
+
+        if user:
+            # Check 2-hour Lockout Status
+            if user.lockout_until and user.lockout_until > now:
+                rem_seconds = int((user.lockout_until - now).total_seconds())
+                hours = rem_seconds // 3600
+                mins = (rem_seconds % 3600) // 60
+                time_display = f"{hours} ម៉ោង {mins} នាទី" if hours > 0 else f"{mins} នាទី"
+                return reject(f"⚠️ គណនីនេះត្រូវបានបិទការចូលជាបណ្តោះអាសន្ន ២ ម៉ោង ដោយសារបញ្ចូលលេខសម្ងាត់ខុស ៥ ដង! (សូមព្យាយាមម្តងទៀតក្នុងរយៈពេល {time_display})")
+
+            # Verify Password
+            is_valid = verify_password(password_clean, user.password_hash) or (user.password_plain and user.password_plain == password_clean)
+
+            if is_valid:
+                # Password correct -> Reset failed attempts and lockout
+                user.failed_attempts = 0
+                user.lockout_until = None
+                user.last_seen = now
+                if full_name_clean:
+                    user.full_name = full_name_clean
+                if phone_clean:
+                    user.phone_number = phone_clean
+                db.commit()
+                db.refresh(user)
+            else:
+                # Password wrong -> Increment failed attempts
+                user.failed_attempts = (user.failed_attempts or 0) + 1
+                if user.failed_attempts >= 5:
+                    user.lockout_until = now + timedelta(hours=2)
+                    db.commit()
+                    return reject("⚠️ គណនីនេះត្រូវបានបិទការចូលជាបណ្តោះអាសន្ន ២ ម៉ោងភ្លាមៗ ដោយសារបញ្ចូលលេខសម្ងាត់ខុស ៥ ដង! (Locked for 2 hours due to 5 failed attempts)")
+                else:
+                    attempts_left = 5 - user.failed_attempts
+                    db.commit()
+                    return reject(f"❌ លេខសម្ងាត់មិនត្រឹមត្រូវទេ! (ប្រសិនបើខុស {attempts_left} ដងទៀត គណនីនឹងត្រូវបិទ ២ ម៉ោង)")
+        else:
+            # New Google Email User -> Auto Sign-up / Register
+            if "@" not in email_clean:
+                return reject("សូមបញ្ចូល Google Email ឱ្យបានត្រឹមត្រូវ (ឧ. name@gmail.com)")
+
             user = User(
-                username=username,
-                password_hash=hash_password(password),
-                password_plain=password,
-                full_name=full_name_clean or username,
+                username=email_clean,
+                email=email_clean,
+                password_hash=hash_password(password_clean),
+                password_plain=password_clean,
+                full_name=full_name_clean or email_clean.split("@")[0],
                 phone_number=phone_clean,
                 role="STUDENT",
+                failed_attempts=0,
+                lockout_until=None,
                 is_active=True,
-                last_seen=datetime.utcnow(),
+                last_seen=now,
             )
             db.add(user)
             db.commit()
             db.refresh(user)
-
-        else:
-            if full_name_clean:
-                user.full_name = full_name_clean
-            if phone_clean:
-                user.phone_number = phone_clean
-            user.last_seen = datetime.utcnow()
-            db.commit()
 
     login_session(request, user)
 

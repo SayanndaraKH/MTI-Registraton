@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ចូលគណនី (Login) - MTI Academy</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=2.0">
+  <title>ចូលគណនី (Google Email Login & Sign Up) - MTI Academy</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=3.0">
 </head>
 <body>
   <main style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1.5rem;">
-    <div style="width:100%; max-width:420px; background:var(--bg-card); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:2.5rem 2rem;">
+    <div style="width:100%; max-width:440px; background:var(--bg-card); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:2.5rem 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 
       <div style="text-align:center; margin-bottom:1.75rem;">
         <div style="font-size:2.5rem; line-height:1;">🎓</div>
@@ -16,55 +16,52 @@
           MTI Academy
         </h1>
         <p style="color:var(--text-muted); font-size:0.9rem; margin-top:0.35rem;">
-          សូមចូលគណនីរបស់អ្នកដើម្បីបន្ត (Sign in to continue)
+          ចូលគណនី ឬ ចុះឈ្មោះដោយប្រើ Google Email
         </p>
       </div>
 
       {% if error %}
-      <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.35); color:#fca5a5; border-radius:var(--radius-md); padding:0.85rem 1rem; font-size:0.87rem; margin-bottom:1.25rem;">
-        ⚠️ {{ error }}
+      <div style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; border-radius:var(--radius-md); padding:0.9rem 1rem; font-size:0.87rem; margin-bottom:1.25rem; line-height:1.5;">
+        {{ error }}
       </div>
       {% endif %}
 
-      {% if settings.ALLOW_SELF_REGISTER %}
-      <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; border-radius:var(--radius-md); padding:0.85rem 1rem; font-size:0.83rem; margin-bottom:1.25rem; line-height:1.65;">
-        ℹ️ <strong>ប្រើលើកដំបូង?</strong> សូមវាយឈ្មោះគណនី និងលេខសម្ងាត់ដែលអ្នកចង់បាន —
-        ប្រព័ន្ធនឹងរក្សាទុកជូនអ្នកភ្លាមៗ។<br>
-        <strong>លើកក្រោយត្រូវវាយឲ្យដូចដើម</strong> ទើបចូលបាន ដូច្នេះសូមចងចាំវាឲ្យបានល្អ។
+      <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7; border-radius:var(--radius-md); padding:0.85rem 1rem; font-size:0.83rem; margin-bottom:1.25rem; line-height:1.65;">
+        ✨ <strong>Google Email Login & Auto Sign-up:</strong><br>
+        • ចូលប្រើប្រាស់ដោយស្វ័យប្រវត្តិជាមួយ Google Email និងលេខសម្ងាត់របស់អ្នក (លេខសម្ងាត់ដាក់អ្វីក៏បាន)។<br>
+        • ករណីមិនទាន់មានគណនី ប្រព័ន្ធនឹង **Sign Up ចុះឈ្មោះអូតូ**។ លើកក្រោយបើកប្រព័ន្ធ នឹង **Auto Sign in ស្គាល់ភ្លាមៗ** ដោយមិនបាច់ Login ទៀតឡើយ!
       </div>
-      {% endif %}
 
       <form method="post" action="/login">
         <input type="hidden" name="next" value="{{ next }}">
 
         <div class="form-group">
-          <label class="form-label" for="username">👤 ឈ្មោះគណនី (Username) *</label>
-          <input type="text" id="username" name="username" class="form-input" required autofocus autocomplete="username">
+          <label class="form-label" for="username">📧 Google Email *</label>
+          <input type="email" id="username" name="username" class="form-input" placeholder="name@gmail.com" required autofocus autocomplete="username">
         </div>
 
         <div class="form-group">
           <label class="form-label" for="password">🔒 លេខសម្ងាត់ (Password) *</label>
-          <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password">
+          <input type="password" id="password" name="password" class="form-input" placeholder="វាយលេខសម្ងាត់របស់អ្នក" required autocomplete="current-password">
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="full_name">📝 ឈ្មោះពេញ / ឈ្មោះផ្ទាល់ខ្លួន (Full Name)</label>
+          <label class="form-label" for="full_name">📝 ឈ្មោះពេញ (Full Name - សម្រាប់សិស្សថ្មី)</label>
           <input type="text" id="full_name" name="full_name" class="form-input" placeholder="ឧ. សុខ ចាន់ (Sok Chan)">
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="phone_number">📞 លេខទូរស័ព្ទ (Phone Number)</label>
+          <label class="form-label" for="phone_number">📞 លេខទូរស័ព្ទ (Phone Number - សម្រាប់សិស្សថ្មី)</label>
           <input type="tel" id="phone_number" name="phone_number" class="form-input" placeholder="ឧ. 012 345 678">
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.75rem; padding:0.85rem;">
-          ចូលគណនី (Login) →
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.75rem; padding:0.85rem; font-weight:700; font-size:1rem;">
+          🚀 ចូលគណនី / ចុះឈ្មោះ (Sign In / Sign Up)
         </button>
       </form>
 
       <p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:1.5rem; line-height:1.6;">
-        មិនមានគណនីមែនទេ? សូមទាក់ទង Admin ដើម្បីបង្កើតគណនីជូនអ្នក។<br>
-        <span style="opacity:0.75;">(No account? Ask the Admin to create one for you.)</span>
+        🛡️ សុវត្ថិភាព ៖ ប្រសិនបើបញ្ចូលលេខសម្ងាត់ខុស <strong>៥ ដង</strong> ប្រព័ន្ធនឹងបិទការចូល <strong>២ ម៉ោង</strong> ដោយស្វ័យប្រវត្តិ។
       </p>
     </div>
   </main>

@@ -64,7 +64,7 @@ def run_light_migrations():
                 with engine.begin() as conn:
                     conn.execute(text("ALTER TABLE telegram_invites ADD COLUMN access_code VARCHAR(20)"))
 
-        # Readable copy of the login password, so the dashboard can show it again.
+        # Readable copy of the login password, email, failed attempts, and lockout timestamp
         if "users" in inspector.get_table_names():
             user_columns = {col["name"] for col in inspector.get_columns("users")}
             if "password_plain" not in user_columns:
@@ -73,6 +73,15 @@ def run_light_migrations():
             if "last_seen" not in user_columns:
                 with engine.begin() as conn:
                     conn.execute(text("ALTER TABLE users ADD COLUMN last_seen DATETIME"))
+            if "email" not in user_columns:
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR(255)"))
+            if "failed_attempts" not in user_columns:
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN failed_attempts INTEGER DEFAULT 0"))
+            if "lockout_until" not in user_columns:
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN lockout_until DATETIME"))
 
         # Course-specific Telegram Group link & registration/class dates
         if "courses" in inspector.get_table_names():

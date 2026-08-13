@@ -153,24 +153,9 @@ def seed_admin_account(db: Session) -> None:
         )
         db.add(admin_user)
 
-    # 2. USER Account (Student)
+    # Deactivate / Remove deprecated default 'USER' account if it exists
     student_user = db.query(User).filter(func.lower(User.username) == "user").first()
-    student_password = "user@168"
     if student_user:
-        student_user.username = "USER"
-        student_user.password_hash = hash_password(student_password)
-        student_user.password_plain = student_password
-        student_user.role = "STUDENT"
-        student_user.is_active = True
-    else:
-        student_user = User(
-            username="USER",
-            password_hash=hash_password(student_password),
-            password_plain=student_password,
-            full_name="Standard User",
-            role="STUDENT",
-            is_active=True,
-        )
-        db.add(student_user)
+        db.delete(student_user)
 
     db.commit()
