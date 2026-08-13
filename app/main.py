@@ -26,8 +26,11 @@ from app.auth import (
 )
 
 # Create database tables & apply lightweight schema migrations
-Base.metadata.create_all(bind=engine)
-run_light_migrations()
+try:
+    Base.metadata.create_all(bind=engine)
+    run_light_migrations()
+except Exception as _e:
+    print(f"Top-level DB init notice: {_e}")
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -349,4 +352,22 @@ async def auth_redirect_handler(request: Request, exc):
     if wants_html and request.method == "GET":
         return RedirectResponse(url=f"/login?next={request.url.path}", status_code=303)
 
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    return JSONResponse(status_code=getattr(exc, "status_code", 401), content={"detail": getattr(exc, "detail", "Unauthorized")})
+
+@app.exception_handler(500)
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    print(f"[ERROR] Processing {request.url.path}: {exc}")
+    traceback.print_exc()
+
+    wants_html = "text/html" in request.headers.get("accept", "")
+    if wants_html and request.method == "GET":
+        return templates.TemplateResponse(
+            request,
+            "login.html",
+            {"settings": settings, "next": "/", "error": None},
+            status_code=200,
+        )
+
+    return JSONResponse(status_code=500, content={"detail": f"Server Error: {str(exc)}"})
