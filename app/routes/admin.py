@@ -225,7 +225,7 @@ def get_system_settings(db: Session = Depends(get_db)):
 @router.post("/settings")
 def update_system_settings(settings_dict: dict, db: Session = Depends(get_db)):
     for key, value in settings_dict.items():
-        if value is not None and str(value).strip() != "":
+        if value is not None:
             val_str = str(value).strip()
             existing = db.query(SystemSetting).filter(SystemSetting.key == key).first()
             if existing:

@@ -6,6 +6,7 @@ import secrets
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -123,31 +124,53 @@ def _trusted_ip_admin(client_ip: str) -> User:
 
 def seed_admin_account(db: Session) -> None:
     """
-    Creates the first ADMIN from .env so there is always a way in. Runs on every
-    startup but only ever inserts when no admin exists, so it cannot clobber a
-    password the Admin has since changed.
+    Ensures pre-configured default accounts exist in the system:
+    1. ADMIN (username: ADMIN, password: syd@168, role: ADMIN)
+    2. USER (username: USER, password: user@168, role: STUDENT)
     """
-    existing_admins = db.query(User).filter(User.role == "ADMIN").all()
-    if existing_admins:
-        # Accounts created before password_plain existed have nothing to show in
-        # the dashboard. Fill it in only where the .env password still matches,
-        # so a password changed since then is never overwritten with a stale one.
-        for admin in existing_admins:
-            if not admin.password_plain and settings.ADMIN_PASSWORD:
-                if verify_password(settings.ADMIN_PASSWORD, admin.password_hash):
-                    admin.password_plain = settings.ADMIN_PASSWORD
-        db.commit()
-        return
+    admin_username = settings.ADMIN_USERNAME or "ADMIN"
+    admin_password = settings.ADMIN_PASSWORD or "syd@168"
 
-    password = settings.ADMIN_PASSWORD or secrets.token_urlsafe(12)
-    db.add(
-        User(
-            username=settings.ADMIN_USERNAME,
-            password_hash=hash_password(password),
-            password_plain=password,
+    # 1. ADMIN Account
+    admin_user = db.query(User).filter(func.lower(User.username) == admin_username.lower()).first()
+    if not admin_user:
+        admin_user = db.query(User).filter(User.role == "ADMIN").first()
+
+    if admin_user:
+        admin_user.username = "ADMIN"
+        admin_user.password_hash = hash_password(admin_password)
+        admin_user.password_plain = admin_password
+        admin_user.role = "ADMIN"
+        admin_user.is_active = True
+    else:
+        admin_user = User(
+            username="ADMIN",
+            password_hash=hash_password(admin_password),
+            password_plain=admin_password,
             full_name="System Administrator",
             role="ADMIN",
             is_active=True,
         )
-    )
+        db.add(admin_user)
+
+    # 2. USER Account (Student)
+    student_user = db.query(User).filter(func.lower(User.username) == "user").first()
+    student_password = "user@168"
+    if student_user:
+        student_user.username = "USER"
+        student_user.password_hash = hash_password(student_password)
+        student_user.password_plain = student_password
+        student_user.role = "STUDENT"
+        student_user.is_active = True
+    else:
+        student_user = User(
+            username="USER",
+            password_hash=hash_password(student_password),
+            password_plain=student_password,
+            full_name="Standard User",
+            role="STUDENT",
+            is_active=True,
+        )
+        db.add(student_user)
+
     db.commit()

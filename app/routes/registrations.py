@@ -181,8 +181,6 @@ def check_registration_status(
 
     return response_data
 
-    return response_data
-
 
 @router.post("/{invoice_id}/receipt")
 async def upload_payment_receipt(

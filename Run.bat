@@ -11,7 +11,9 @@ echo   Radmin VPN IP:   http://26.169.173.173:8000
 echo ===================================================
 echo.
 
-IF EXIST .venv\Scripts\activate.bat (
+IF EXIST .venv\Scripts\python.exe (
+    .venv\Scripts\python.exe run.py
+) ELSE IF EXIST .venv\Scripts\activate.bat (
     call .venv\Scripts\activate.bat
     python run.py
 ) ELSE (

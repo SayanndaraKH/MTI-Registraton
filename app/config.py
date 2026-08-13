@@ -16,8 +16,8 @@ class Settings(BaseSettings):
 
     # Admin Dashboard login. Students must never be able to reach /admin,
     # so these gate the dashboard page and every admin API route.
-    ADMIN_USERNAME: str = "admin"
-    ADMIN_PASSWORD: str = ""
+    ADMIN_USERNAME: str = "ADMIN"
+    ADMIN_PASSWORD: str = "syd@168"
 
     # Signs the session cookie. Changing it logs everyone out.
     SECRET_KEY: str = ""
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # First-time visitors may pick their own username and password at the login
     # form; that first attempt creates the account. Turn off to make the Admin
     # the only one who can create accounts.
-    ALLOW_SELF_REGISTER: bool = True
+    ALLOW_SELF_REGISTER: bool = False
     MIN_USERNAME_LENGTH: int = 3
     MIN_PASSWORD_LENGTH: int = 4
 

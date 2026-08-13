@@ -100,17 +100,18 @@ async function loadRegistrations() {
 
             actionBtnsHtml += `
                 <button onclick="editRegistration(${r.id})" class="btn btn-outline btn-sm">✏️ Edit</button>
-                <button onclick="deleteRegistration(${r.id}, '${r.invoice_id}')" class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">🗑️ Delete</button>
+                <button onclick="deleteRegistration(${r.id}, ${escapeHtml(JSON.stringify(r.invoice_id || ''))})" class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">🗑️ Delete</button>
             `;
 
             const actionCell = `<div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:nowrap;">${actionBtnsHtml}</div>`;
+            const tgUsername = r.telegram_username ? r.telegram_username.replace('@', '') : '';
 
             tr.innerHTML = `
-                <td style="white-space:nowrap;"><code>${r.invoice_id}</code></td>
-                <td><strong>${escapeHtml(r.student_name)}</strong></td>
-                <td style="white-space:nowrap;">${escapeHtml(r.phone_number)}</td>
-                <td style="white-space:nowrap;">@${escapeHtml(r.telegram_username.replace('@', ''))}</td>
-                <td style="min-width:180px;">${escapeHtml(r.course_title)}</td>
+                <td style="white-space:nowrap;"><code>${escapeHtml(r.invoice_id || '')}</code></td>
+                <td><strong>${escapeHtml(r.student_name || '—')}</strong></td>
+                <td style="white-space:nowrap;">${escapeHtml(r.phone_number || '—')}</td>
+                <td style="white-space:nowrap;">${tgUsername ? '@' + escapeHtml(tgUsername) : '—'}</td>
+                <td style="min-width:180px;">${escapeHtml(r.course_title || '—')}</td>
                 <td style="white-space:nowrap;"><strong>${r.amount} ${r.currency}</strong></td>
                 <td>${receiptCell}</td>
                 <td style="white-space:nowrap;">${statusBadge}</td>
@@ -233,7 +234,7 @@ async function loadUsers() {
                 <td>
                     <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:nowrap;">
                         <button onclick="editUser(${u.id})" class="btn btn-outline btn-sm">✏️ Edit</button>
-                        <button onclick="deleteUser(${u.id}, '${escapeHtml(u.username)}')" class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">🗑️ Delete</button>
+                        <button onclick="deleteUser(${u.id}, ${escapeHtml(JSON.stringify(u.username || ''))})" class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">🗑️ Delete</button>
                     </div>
                 </td>
             `;
@@ -638,11 +639,22 @@ async function handleSaveCourse(e) {
     const groupLinkInput = document.getElementById('courseGroupLinkInput');
     const activeCheck = document.getElementById('courseIsActiveInput');
 
+    const title = document.getElementById('courseTitleInput').value.trim();
+    const priceUsdRaw = document.getElementById('courseUsdInput').value;
+    const priceKhrRaw = document.getElementById('courseKhrInput').value;
+
+    if (!title) return alert('សូមបញ្ចូលឈ្មោះវគ្គសិក្សា (Course title is required)');
+    const price_usd = parseFloat(priceUsdRaw);
+    const price_khr = parseFloat(priceKhrRaw);
+    if (isNaN(price_usd) || isNaN(price_khr)) {
+        return alert('សូមបញ្ចូលតម្លៃវគ្គសិក្សាឲ្យបានត្រឹមត្រូវ (Please enter valid prices)');
+    }
+
     const payload = {
-        title: document.getElementById('courseTitleInput').value,
+        title: title,
         description: document.getElementById('courseDescInput').value,
-        price_usd: parseFloat(document.getElementById('courseUsdInput').value),
-        price_khr: parseFloat(document.getElementById('courseKhrInput').value),
+        price_usd: price_usd,
+        price_khr: price_khr,
         duration: document.getElementById('courseDurationInput').value,
         image_url: document.getElementById('courseImageUrlInput').value || null,
         telegram_group_link: groupLinkInput ? (groupLinkInput.value.trim() || null) : null,
@@ -652,24 +664,42 @@ async function handleSaveCourse(e) {
     const url = id ? `/api/v1/courses/${id}` : '/api/v1/courses';
     const method = id ? 'PUT' : 'POST';
 
-    const res = await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-    if (res.ok) {
-        document.getElementById('courseModal').classList.remove('active');
-        loadCourses();
-    } else {
-        alert('Failed saving course');
+        if (res.ok) {
+            document.getElementById('courseModal').classList.remove('active');
+            loadCourses();
+        } else {
+            const data = await res.json();
+            let detail = 'Failed saving course';
+            if (typeof data.detail === 'string') detail = data.detail;
+            else if (Array.isArray(data.detail)) detail = data.detail.map(d => d.msg).join(', ');
+            alert(`រក្សាទុកមិនបានជោគជ័យ: ${detail}`);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Connection error while saving course.');
     }
 }
 
 async function deleteCourse(id) {
     if (!confirm("តើអ្នកពិតជាចង់លុបវគ្គសិក្សានេះមែនទេ? (Delete course?)")) return;
-    const res = await fetch(`/api/v1/courses/${id}`, { method: 'DELETE' });
-    if (res.ok) loadCourses();
+    try {
+        const res = await fetch(`/api/v1/courses/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            loadCourses();
+        } else {
+            const data = await res.json();
+            alert(`Delete failed: ${data.detail || 'Unknown error'}`);
+        }
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 async function loadSettings() {
@@ -700,16 +730,22 @@ async function handleSaveSettings(e) {
         CONTACT_PHONE: document.getElementById('settingPhone').value
     };
 
-    const res = await fetch('/api/v1/admin/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+    try {
+        const res = await fetch('/api/v1/admin/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-    if (res.ok) {
-        alert("បានរក្សាទុកការកំណត់ជោគជ័យ! (Settings saved successfully)");
-    } else {
-        alert("Failed to save settings");
+        if (res.ok) {
+            alert("បានរក្សាទុកការកំណត់ជោគជ័យ! (Settings saved successfully)");
+        } else {
+            const data = await res.json();
+            alert(`Failed to save settings: ${data.detail || 'Unknown error'}`);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Connection error while saving settings.');
     }
 }
 
@@ -903,8 +939,11 @@ function selectStudentConversation(studentId, fullName, phone, telegram, isOnlin
         ? `<span class="badge-online" style="margin-left:0.5rem;"><span class="dot-online"></span> Online</span>`
         : `<span class="badge-offline" style="margin-left:0.5rem;"><span class="dot-offline"></span> Offline</span>`;
 
-    if (nameEl) nameEl.innerHTML = `💬 ឆាតជាមួយ: <strong>${escapeHtml(fullName)}</strong> ${statusTag}`;
-    if (infoEl) infoEl.innerText = `📞 ${phone} · ✈️ @${telegram.replace('@', '')}`;
+    const cleanTelegram = (telegram || '').replace('@', '');
+    const telegramPart = cleanTelegram ? ` · ✈️ @${cleanTelegram}` : '';
+
+    if (nameEl) nameEl.innerHTML = `💬 ឆាតជាមួយ: <strong>${escapeHtml(fullName || 'Student')}</strong> ${statusTag}`;
+    if (infoEl) infoEl.innerText = `📞 ${phone || '—'}${telegramPart}`;
     if (formEl) formEl.style.display = 'flex';
     if (clearBtn) clearBtn.style.display = 'inline-block';
 
@@ -969,4 +1008,18 @@ async function deleteAdminMessage(msgId) {
         console.error("Admin delete message error:", e);
     }
 }
+
+// Close active modal on Escape key or overlay backdrop click
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+    }
+});
+
+document.addEventListener('click', (e) => {
+    if (e.target && e.target.classList.contains('modal-overlay')) {
+        e.target.classList.remove('active');
+    }
+});
+
 
