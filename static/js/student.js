@@ -438,6 +438,15 @@ async function checkStatus(invoiceId) {
             if (inviteLinkBtn && data.invite_link) {
                 inviteLinkBtn.href = data.invite_link;
             }
+
+            // Auto-download PDF receipt ONCE when approved by Admin
+            const autoKey = 'auto_pdf_downloaded_' + invoiceId;
+            if (!sessionStorage.getItem(autoKey)) {
+                sessionStorage.setItem(autoKey, '1');
+                setTimeout(() => {
+                    downloadStudentOfficialReceiptPDF(invoiceId);
+                }, 800);
+            }
         } else if (data.status === 'SUBMITTED') {
             if (statusBadge) {
                 statusBadge.className = 'status-badge status-submitted';
@@ -492,9 +501,9 @@ async function loadMyRegistrations() {
 
             if (r.status === 'PAID') {
                 statusHtml = `<span class="status-badge status-paid">✓ Admin បានអនុម័ត (APPROVED)</span>`;
-                if (r.invite_link) {
-                    actionBtn = `<a href="${r.invite_link}" target="_blank" class="btn btn-primary" style="background: linear-gradient(135deg, #0088cc, #005580); border:none;">🚀 ចូល Telegram Group</a>`;
-                }
+                const tgBtn = r.invite_link ? `<a href="${r.invite_link}" target="_blank" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #0088cc, #005580); border:none;">🚀 ចូល Telegram Group</a>` : '';
+                const pdfBtn = `<button onclick="downloadStudentOfficialReceiptPDF('${r.invoice_id}')" class="btn btn-outline btn-sm" style="color:#10b981; border-color:rgba(16,185,129,0.4);" title="ទាញយកវិក័យបត្រសាលាជា PDF">📄 📥 វិក័យបត្រ PDF</button>`;
+                actionBtn = `<div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">${tgBtn} ${pdfBtn}</div>`;
             } else if (r.status === 'SUBMITTED') {
                 statusHtml = `<span class="status-badge status-submitted">⏳ កំពុងរង់ចាំ Admin ពិនិត្យ</span>`;
                 actionBtn = `<a href="/checkout/${r.invoice_id}" class="btn btn-outline btn-sm">🧾 មើលស្ថានភាព</a>`;
@@ -526,6 +535,240 @@ async function loadMyRegistrations() {
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+// ---------- Student PDF Receipt Generator & Downloader ----------
+
+async function downloadStudentOfficialReceiptPDF(invoiceId) {
+    if (!invoiceId) {
+        const container = document.getElementById('checkoutContainer');
+        if (container) invoiceId = container.dataset.invoiceId;
+    }
+    if (!invoiceId) {
+        return alert("ពុំមានព័ត៌មាន Invoice ID សម្រាប់ទាញយកវិក័យបត្រទេ");
+    }
+
+    try {
+        // Fetch registration details
+        const res = await fetch(`/api/v1/registrations/${invoiceId}/status`);
+        if (!res.ok) {
+            return alert("ពុំអាចទាញយកទិន្នន័យវិក័យបត្របានទេ (Unable to fetch registration status)");
+        }
+        const data = await res.json();
+        if (data.status !== 'PAID') {
+            return alert("វិក័យបត្រផ្លូវការអាចទាញយកបាន តែនៅពេល Admin បានអនុម័តការបង់ប្រាក់រួចរាល់ប៉ុណ្ណោះ! (Official receipt is available after payment is approved by Admin)");
+        }
+
+        let dateStr = data.created_at ? data.created_at.split(' ')[0] : new Date().toISOString().split('T')[0];
+        const studentName = escapeHtml(data.student_name || '—');
+        const phone = escapeHtml(data.phone_number || '—');
+        const tg = data.telegram_username ? (data.telegram_username.startsWith('@') ? escapeHtml(data.telegram_username) : '@' + escapeHtml(data.telegram_username)) : '—';
+        const courseTitle = escapeHtml(data.course_title || '—');
+        const classStart = escapeHtml(data.class_start_date || '14-Aug-2026');
+        const classTime = escapeHtml(data.class_time || '8:00 PM - 9:30 PM (យប់)');
+        const duration = escapeHtml(data.duration || '4 សប្តាហ៍ (4 Weeks)');
+
+        const numAmount = typeof data.amount === 'number' ? data.amount : parseFloat(data.amount || 0);
+        const amountFormatted = data.currency === 'USD' ? `$${numAmount.toFixed(2)}` : `${numAmount.toLocaleString()} KHR`;
+        const adminPhone = '092 800 104';
+
+        // Temporary printable receipt sheet DOM node
+        const tempDiv = document.createElement('div');
+        tempDiv.id = 'tempStudentPdfReceipt';
+        tempDiv.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:780px; background:#ffffff; font-family:"Inter","Kantumruy Pro","Khmer OS Battambang",sans-serif; color:#1e293b; z-index:-9999;';
+
+        tempDiv.innerHTML = `
+            <div class="receipt-sheet" style="background:#ffffff !important; color:#1e293b !important; padding:2.25rem 2rem; border-radius:12px; font-family:'Inter','Kantumruy Pro','Khmer OS Battambang',sans-serif; border:2px solid #cbd5e1; box-sizing:border-box;">
+              
+              <!-- Header Section -->
+              <div class="receipt-header" style="display:flex; align-items:center; gap:1.25rem; margin-bottom:0.75rem;">
+                <div class="receipt-logo-container">
+                  <img src="/static/uploads/mti_logo.png" alt="MTI Logo" class="receipt-logo" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">
+                </div>
+                <div class="receipt-header-text">
+                  <h2 class="khmer-title" style="font-size:1.25rem; font-weight:800; color:#1e3a8a !important; margin:0; line-height:1.3;">មជ្ឈមណ្ឌលបច្ចេកវិទ្យាម៉ាស់ស្ទើ កូដ</h2>
+                  <h3 class="english-title" style="font-size:0.88rem; font-weight:800; color:#d97706 !important; margin:0.15rem 0 0.25rem 0; letter-spacing:0.04em;">MASTER CODE TECHNOLOGY CENTER</h3>
+                  <p class="receipt-subtitle" style="font-size:0.78rem; color:#475569 !important; margin:0;">ខេត្តប៉ៃលិន | 📱 ទូរស័ព្ទ/Telegram៖ ${adminPhone} | គេហទំព័រ៖ mti-registraton.onrender.com</p>
+                </div>
+              </div>
+
+              <div class="receipt-divider" style="height:3px; background:linear-gradient(90deg, #1e3a8a, #d97706, #059669); margin:0.85rem 0 1.15rem 0; border-radius:2px;"></div>
+
+              <!-- Document Title -->
+              <div class="receipt-doc-title" style="text-align:center; margin-bottom:1.15rem; background:#f8fafc; padding:0.75rem; border-radius:8px; border:1px solid #e2e8f0;">
+                <h1 style="font-size:1.25rem; font-weight:800; color:#0f172a !important; margin:0;">វិក័យបត្រទូទាត់ប្រាក់ និងលិខិតចូលរៀន</h1>
+                <h2 style="font-size:0.8rem; font-weight:700; color:#475569 !important; margin:0.2rem 0 0 0; letter-spacing:0.05em;">OFFICIAL TUITION RECEIPT & ADMISSION CERTIFICATE</h2>
+              </div>
+
+              <!-- Invoice Details Meta Grid -->
+              <div class="receipt-meta-grid" style="display:flex; justify-content:space-between; background:#f1f5f9; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.15rem; font-size:0.88rem; border:1px solid #e2e8f0;">
+                <div class="meta-item">
+                  <span class="meta-label" style="color:#64748b;">លេខវិក័យបត្រ (Receipt No.): </span>
+                  <strong class="meta-val" style="color:#1e3a8a;">${data.invoice_id}</strong>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label" style="color:#64748b;">កាលបរិច្ឆេទ (Date Issued): </span>
+                  <span class="meta-val">${dateStr}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label" style="color:#64748b;">ស្ថានភាព (Status): </span>
+                  <span class="meta-val paid-badge" style="color:#059669; font-weight:bold;">✓ បានទូទាត់ប្រាក់រួច (PAID)</span>
+                </div>
+              </div>
+
+              <!-- Student & Course Information Table -->
+              <table class="receipt-info-table" style="width:100%; border-collapse:collapse; margin-bottom:1.25rem; font-size:0.88rem;">
+                <tr>
+                  <th colspan="2" class="table-section-head" style="background:#e2e8f0; color:#1e293b; padding:0.5rem 0.75rem; text-align:left; font-weight:700;">👤 ព័ត៌មានសិស្ស (Student Information)</th>
+                </tr>
+                <tr>
+                  <td class="info-label" style="width:38%; padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9; color:#475569;">ឈ្មោះពេញសិស្ស (Student Name):</td>
+                  <td class="info-value" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9;"><strong style="font-size:1.05rem; color:#1e3a8a;">${studentName}</strong></td>
+                </tr>
+                <tr>
+                  <td class="info-label" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9; color:#475569;">លេខទូរស័ព្ទ (Phone Number):</td>
+                  <td class="info-value" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9;">${phone}</td>
+                </tr>
+                <tr>
+                  <td class="info-label" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9; color:#475569;">គណនី Telegram (Telegram Account):</td>
+                  <td class="info-value" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9;">${tg}</td>
+                </tr>
+                <tr>
+                  <th colspan="2" class="table-section-head" style="background:#e2e8f0; color:#1e293b; padding:0.5rem 0.75rem; text-align:left; font-weight:700;">🎓 ព័ត៌មានវគ្គសិក្សា និងកាលវិភាគ (Course & Class Details)</th>
+                </tr>
+                <tr>
+                  <td class="info-label" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9; color:#475569;">ឈ្មោះវគ្គសិក្សា (Course Title):</td>
+                  <td class="info-value" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9;"><strong style="font-size:1.05rem; color:#065f46;">${courseTitle}</strong></td>
+                </tr>
+                <tr>
+                  <td class="info-label" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9; color:#475569;">កាលបរិច្ឆេទចូលរៀន (Class Start Date):</td>
+                  <td class="info-value" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9;"><strong style="color:#d97706;">${classStart}</strong></td>
+                </tr>
+                <tr>
+                  <td class="info-label" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9; color:#475569;">ម៉ោងសិក្សា (Class Schedule):</td>
+                  <td class="info-value" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9;">${classTime}</td>
+                </tr>
+                <tr>
+                  <td class="info-label" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9; color:#475569;">រយៈពេលសិក្សា (Duration):</td>
+                  <td class="info-value" style="padding:0.5rem 0.75rem; border-bottom:1px solid #f1f5f9;">${duration}</td>
+                </tr>
+              </table>
+
+              <!-- Financial Breakdown Table -->
+              <table class="receipt-payment-table" style="width:100%; border-collapse:collapse; margin-bottom:1.25rem; font-size:0.88rem; border:1px solid #e2e8f0;">
+                <thead>
+                  <tr style="background:#f1f5f9;">
+                    <th style="width:10%; text-align:center; padding:0.6rem; border-bottom:1px solid #cbd5e1;">ល.រ</th>
+                    <th style="width:55%; text-align:left; padding:0.6rem; border-bottom:1px solid #cbd5e1;">បរិយាយ (Description)</th>
+                    <th style="width:35%; text-align:right; padding:0.6rem; border-bottom:1px solid #cbd5e1;">ចំនួនទឹកប្រាក់ (Amount)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="text-align:center; padding:0.75rem;">1</td>
+                    <td style="padding:0.75rem;">
+                      <strong>ថ្លៃសិក្សាវគ្គ ${courseTitle}</strong><br>
+                      <small style="color:#64748b;">(Official Course Tuition Fee)</small>
+                    </td>
+                    <td style="text-align:right; padding:0.75rem;"><strong>${amountFormatted}</strong></td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr style="background:#f8fafc;">
+                    <td colspan="2" style="text-align:right; font-weight:bold; font-size:1rem; color:#1e293b; padding:0.75rem;">សរុបទឹកប្រាក់បានទូទាត់ (TOTAL PAID):</td>
+                    <td style="text-align:right; padding:0.75rem;"><strong style="font-size:1.25rem; color:#059669;">${amountFormatted}</strong></td>
+                  </tr>
+                </tfoot>
+              </table>
+
+              <!-- Terms Notice -->
+              <div class="receipt-notice" style="background:#fffbe0; border:1px solid #fef08a; padding:0.75rem; border-radius:8px; font-size:0.82rem; color:#854d0e; margin-bottom:1.5rem;">
+                <p style="margin:0;">📌 <strong>ចំណាំ (Note):</strong> វិក័យបត្រនេះជាភស្តុតាងផ្លូវការនៃការចុះឈ្មោះចូលរៀននៅមជ្ឈមណ្ឌល MTI Academy។ សូមរក្សាទុកវិក័យបត្រនេះសម្រាប់ការផ្ទៀងផ្ទាត់ពេលចូលរៀន។</p>
+              </div>
+
+              <!-- Signatures & Stamp Block -->
+              <div class="receipt-signatures" style="display:flex; justify-content:space-between; margin-top:2rem; padding-top:1rem; border-top:1px dashed #cbd5e1;">
+                <div class="signature-box" style="text-align:center; width:45%;">
+                  <p class="sig-title" style="font-weight:700; color:#1e293b; margin:0;">ហត្ថលេខាអ្នកបង់ប្រាក់</p>
+                  <p class="sig-sub" style="font-size:0.75rem; color:#64748b; margin:0.15rem 0 0.5rem 0;">(Student Signature)</p>
+                  <div class="sig-space" style="height:50px;"></div>
+                  <p class="sig-name" style="font-weight:600; color:#1e293b; margin:0;">${studentName}</p>
+                </div>
+                
+                <div class="signature-box" style="text-align:center; width:45%;">
+                  <p class="sig-title" style="font-weight:700; color:#1e293b; margin:0;">ហត្ថលេខា និងត្រា Admin</p>
+                  <p class="sig-sub" style="font-size:0.75rem; color:#64748b; margin:0.15rem 0 0.5rem 0;">(Authorized Admin Signature & Stamp)</p>
+                  <div class="sig-space admin-stamp-area" style="height:55px; display:flex; align-items:center; justify-content:center;">
+                    <div class="digital-stamp" style="border:2px dashed #059669; color:#059669; padding:4px 10px; border-radius:8px; font-weight:bold; font-size:0.75rem; background:rgba(16,185,129,0.06); display:inline-block; transform:rotate(-4deg);">
+                      <div class="stamp-inner">
+                        <span>★ MTI ACADEMY ★</span>
+                        <strong style="display:block; font-size:0.75rem; margin:2px 0;">PAID & APPROVED</strong>
+                        <span style="font-size:0.65rem;">OFFICIAL STAMP</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="sig-name" style="margin-top:0.25rem;"><strong>Admin: យ៉ន សាយ៉ាន់ដារ៉ា</strong></p>
+                </div>
+              </div>
+
+            </div>
+        `;
+
+        document.body.appendChild(tempDiv);
+
+        // Convert DOM node to PDF download
+        if (typeof html2pdf !== 'undefined') {
+            const element = tempDiv.querySelector('.receipt-sheet');
+            const opt = {
+                margin: [8, 8, 8, 8],
+                filename: `MTI_Official_Receipt_${data.invoice_id}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            await html2pdf().set(opt).from(element).save();
+            document.body.removeChild(tempDiv);
+        } else {
+            triggerStudentReceiptPrintFallback(tempDiv, data.invoice_id);
+        }
+
+    } catch (e) {
+        console.error("PDF generation error:", e);
+        alert("មានបញ្ហាក្នុងការបង្កើត PDF (Error generating PDF)");
+    }
+}
+
+function triggerStudentReceiptPrintFallback(tempDiv, invoiceId) {
+    const htmlContent = tempDiv.innerHTML;
+    document.body.removeChild(tempDiv);
+    const printWindow = window.open('', '_blank', 'width=880,height=1050');
+    if (!printWindow) {
+        window.print();
+        return;
+    }
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="km">
+        <head>
+            <meta charset="UTF-8">
+            <title>Official Tuition Receipt - MTI Academy - ${invoiceId}</title>
+            <link rel="stylesheet" href="/static/css/style.css?v=2.2">
+            <style>
+                body { background: #ffffff !important; color: #1e293b !important; padding: 1.5rem !important; }
+                @media print { body { padding: 0 !important; } }
+            </style>
+        </head>
+        <body>
+            ${htmlContent}
+            <script>
+                window.onload = function() {
+                    setTimeout(function() { window.print(); }, 350);
+                };
+            </script>
+        </body>
+        </html>
+    `);
 }
 
 function initStudentChat() {

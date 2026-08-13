@@ -137,12 +137,18 @@ def get_my_registrations(db: Session = Depends(get_db), user: User = Depends(req
         results.append({
             "id": r.id,
             "invoice_id": r.invoice_id,
+            "student_name": r.student_name,
+            "phone_number": r.phone_number,
+            "telegram_username": r.telegram_username,
             "course_title": r.course.title if r.course else "Course",
+            "class_start_date": r.course.class_start_date if (r.course and r.course.class_start_date) else None,
+            "class_time": r.course.class_time if (r.course and r.course.class_time) else None,
+            "duration": r.course.duration if (r.course and r.course.duration) else None,
             "amount": r.amount,
             "currency": r.currency,
             "status": r.status,
             "receipt_image_url": r.receipt_image_url,
-            "created_at": r.created_at.strftime("%Y-%m-%d %H:%M"),
+            "created_at": r.created_at.strftime("%Y-%m-%d %H:%M") if r.created_at else None,
             "invite_link": course_link if (r.status == "PAID" and invite) else None
         })
     return results
@@ -209,9 +215,15 @@ def check_registration_status(
         "invoice_id": reg.invoice_id,
         "status": reg.status,
         "student_name": reg.student_name,
+        "phone_number": reg.phone_number,
+        "telegram_username": reg.telegram_username,
         "amount": reg.amount,
         "currency": reg.currency,
         "course_title": reg.course.title if reg.course else "Course",
+        "class_start_date": reg.course.class_start_date if (reg.course and reg.course.class_start_date) else None,
+        "class_time": reg.course.class_time if (reg.course and reg.course.class_time) else None,
+        "duration": reg.course.duration if (reg.course and reg.course.duration) else None,
+        "created_at": reg.created_at.strftime("%Y-%m-%d %H:%M") if reg.created_at else None,
         "receipt_image_url": reg.receipt_image_url,
         "invite_link": None
     }

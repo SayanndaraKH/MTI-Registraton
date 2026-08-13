@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KHQR Checkout - Invoice {{ invoice_id }}</title>
   <link rel="stylesheet" href="/static/css/style.css?v=2.2">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -109,13 +110,18 @@
       <h2 style="color: #10b981; font-weight: 800; font-size: 1.8rem; margin-bottom: 0.5rem;">
         Admin បានអនុម័តការបង់ប្រាក់! (PAYMENT ACCEPTED)
       </h2>
-      <p style="color: #cbd5e1; font-size: 1rem; margin-bottom: 2rem;">
-        សូមអរគុណ! អ្នកអាចចូលរួម Private Group Telegram ឥឡូវនេះបានតាមរយៈ Link ខាងក្រោម៖
+      <p style="color: #cbd5e1; font-size: 1rem; margin-bottom: 1.5rem;">
+        សូមអរគុណ! អ្នកអាចចូលរួម Private Group Telegram និងទាញយកវិក័យបត្រសាលាជា PDF បានតាមប៊ូតុងខាងក្រោម៖
       </p>
 
-      <a id="telegramInviteBtn" href="#" target="_blank" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem; background: linear-gradient(135deg, #0088cc, #005580); border: none;">
-        🚀 ចូលរួម Telegram Group (Join Private Group)
-      </a>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:0.85rem; width:100%; max-width:480px; margin:0 auto;">
+        <a id="telegramInviteBtn" href="#" target="_blank" class="btn btn-primary" style="width:100%; font-size: 1.05rem; padding: 0.9rem 1.5rem; background: linear-gradient(135deg, #0088cc, #005580); border: none; text-align:center;">
+          🚀 ចូលរួម Telegram Group (Join Private Group)
+        </a>
+        <button id="downloadReceiptPdfBtn" onclick="downloadStudentOfficialReceiptPDF()" class="btn btn-outline" style="width:100%; font-size: 1.05rem; padding: 0.9rem 1.5rem; color:#10b981; border-color:rgba(16,185,129,0.5); font-weight:700;">
+          📄 📥 ទាញយកវិក័យបត្រសាលា (PDF Only)
+        </button>
+      </div>
     </div>
 
   </main>

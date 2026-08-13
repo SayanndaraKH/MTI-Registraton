@@ -162,7 +162,7 @@ async function loadRegistrations() {
 
         tbody.innerHTML = '';
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:2rem;">ពុំមានទិន្នន័យចុះឈ្មោះទេ (No registrations found)</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:2rem;">ពុំមានទិន្នន័យចុះឈ្មោះទេ (No registrations found)</td></tr>`;
             return;
         }
 
@@ -174,7 +174,7 @@ async function loadRegistrations() {
         };
 
         window.registrationsMap = {};
-        data.forEach(r => {
+        data.forEach((r, idx) => {
             window.registrationsMap[r.id] = r;
             const tr = document.createElement('tr');
             const statusBadge = statusBadges[r.status] || statusBadges.PENDING;
@@ -212,6 +212,7 @@ async function loadRegistrations() {
             const tgUsername = r.telegram_username ? r.telegram_username.replace('@', '') : '';
 
             tr.innerHTML = `
+                <td style="white-space:nowrap; text-align:center; font-weight:700; color:#94a3b8;">${idx + 1}</td>
                 <td style="white-space:nowrap;"><code>${escapeHtml(r.invoice_id || '')}</code></td>
                 <td><strong>${escapeHtml(r.student_name || '—')}</strong></td>
                 <td style="white-space:nowrap;">${escapeHtml(r.phone_number || '—')}</td>
@@ -335,11 +336,11 @@ async function loadUsers() {
 
         tbody.innerHTML = '';
         if (users.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:2rem;">ពុំមានគណនីទេ (No accounts found)</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:2rem;">ពុំមានគណនីទេ (No accounts found)</td></tr>`;
             return;
         }
 
-        users.forEach(u => {
+        users.forEach((u, idx) => {
             const roleBadge = u.role === 'ADMIN'
                 ? `<span class="status-badge status-paid">🛡️ ADMIN</span>`
                 : `<span class="status-badge status-submitted">🎓 STUDENT</span>`;
@@ -361,6 +362,7 @@ async function loadUsers() {
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
+                <td style="white-space:nowrap; text-align:center; font-weight:700; color:#94a3b8;">${idx + 1}</td>
                 <td style="white-space:nowrap;"><code>${u.id}</code></td>
                 <td><strong>${escapeHtml(u.username)}</strong></td>
                 <td style="white-space:nowrap;">${pwCell}</td>
