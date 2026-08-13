@@ -85,7 +85,7 @@ def seed_initial_courses(db: Session):
                 reg_end_date="2026-08-25",
                 class_start_date="2026-09-01",
                 class_time="7:00 PM - 8:30 PM",
-                initial_registered_count=15,
+                initial_registered_count=0,
                 is_active=True
             ),
             Course(
@@ -100,7 +100,7 @@ def seed_initial_courses(db: Session):
                 reg_end_date="2026-08-30",
                 class_start_date="2026-09-05",
                 class_time="6:00 PM - 7:30 PM",
-                initial_registered_count=12,
+                initial_registered_count=0,
                 is_active=True
             ),
             Course(
@@ -115,7 +115,7 @@ def seed_initial_courses(db: Session):
                 reg_end_date="2026-09-05",
                 class_start_date="2026-09-10",
                 class_time="7:30 PM - 9:00 PM",
-                initial_registered_count=8,
+                initial_registered_count=0,
                 is_active=True
             )
         ]
