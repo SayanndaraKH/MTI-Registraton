@@ -237,7 +237,8 @@ async def admin_upload_student_receipt(
     with open(save_path, "wb") as f:
         f.write(contents)
 
-    reg.receipt_image_url = f"/static/uploads/receipts/{safe_name}"
+    from app.routes.registrations import process_receipt_image_to_b64
+    reg.receipt_image_url = process_receipt_image_to_b64(contents, file.content_type)
 
     # Auto approve and process payment (marks status PAID, issues access code & group link)
     process_successful_payment(db=db, registration=reg, transaction_ref="MANUAL_ADMIN_UPLOAD")

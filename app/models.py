@@ -63,7 +63,7 @@ class Registration(Base):
     amount = Column(Float, nullable=False)
     currency = Column(String(10), default="USD") # USD or KHR
     status = Column(String(50), default="PENDING") # PENDING, SUBMITTED, REJECTED, PAID
-    receipt_image_url = Column(String(500), nullable=True) # Payment proof/receipt uploaded by student
+    receipt_image_url = Column(Text, nullable=True) # Permanent Base64 payment proof/receipt uploaded by student
     created_at = Column(DateTime, default=datetime.utcnow)
 
     course = relationship("Course", back_populates="registrations")

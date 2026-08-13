@@ -52,15 +52,51 @@ def run_light_migrations():
             if "receipt_image_url" not in existing_columns:
                 try:
                     with engine.begin() as conn:
-                        conn.execute(text("ALTER TABLE registrations ADD COLUMN receipt_image_url VARCHAR(500)"))
+                        conn.execute(text("ALTER TABLE registrations ADD COLUMN receipt_image_url TEXT"))
                 except Exception as e:
                     print(f"Migration notice: {e}")
+            else:
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE registrations ALTER COLUMN receipt_image_url TYPE TEXT"))
+                except Exception as e:
+                    print(f"Migration notice: {e}")
+
             if "user_id" not in existing_columns:
                 try:
                     with engine.begin() as conn:
                         conn.execute(text("ALTER TABLE registrations ADD COLUMN user_id INTEGER"))
                 except Exception as e:
                     print(f"Migration notice: {e}")
+
+            # Migrate any existing file path receipts to 100% persistent Base64 Data URIs in DB
+            try:
+                import os, base64, io
+                from PIL import Image
+                with engine.begin() as conn:
+                    result = conn.execute(text("SELECT id, receipt_image_url FROM registrations WHERE receipt_image_url IS NOT NULL AND receipt_image_url NOT LIKE 'data:%'")).fetchall()
+                    for row_id, rel_path in result:
+                        if not rel_path:
+                            continue
+                        clean_path = rel_path.lstrip("/").replace("/", os.sep)
+                        if os.path.exists(clean_path):
+                            try:
+                                with open(clean_path, "rb") as f:
+                                    file_bytes = f.read()
+                                img = Image.open(io.BytesIO(file_bytes))
+                                img.thumbnail((1200, 1200), Image.Resampling.LANCZOS)
+                                if img.mode in ("RGBA", "P"):
+                                    img = img.convert("RGB")
+                                out_buf = io.BytesIO()
+                                img.save(out_buf, format="JPEG", quality=80)
+                                b64_data = base64.b64encode(out_buf.getvalue()).decode("utf-8")
+                                b64_uri = f"data:image/jpeg;base64,{b64_data}"
+                                conn.execute(text("UPDATE registrations SET receipt_image_url = :b64 WHERE id = :rid"), {"b64": b64_uri, "rid": row_id})
+                                print(f"Migrated receipt for registration #{row_id} to persistent Base64 Data URI")
+                            except Exception as ex:
+                                print(f"Receipt migration error for #{row_id}: {ex}")
+            except Exception as e:
+                print(f"Receipt migration notice: {e}")
 
         # One-time code a student types to unlock the group link after being offline.
         if "telegram_invites" in inspector.get_table_names():

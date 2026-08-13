@@ -197,6 +197,37 @@ async def upload_payment_receipt(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(require_login),
+import io
+import base64
+from PIL import Image
+
+def process_receipt_image_to_b64(file_bytes: bytes, content_type: str = "image/jpeg") -> str:
+    """
+    Compresses receipt image to lightweight JPEG and returns full Base64 Data URI.
+    Ensures 100% database persistence across Render server restarts/rebuilds.
+    """
+    if content_type and content_type.startswith("image/"):
+        try:
+            img = Image.open(io.BytesIO(file_bytes))
+            img.thumbnail((1200, 1200), Image.Resampling.LANCZOS)
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            out_buf = io.BytesIO()
+            img.save(out_buf, format="JPEG", quality=80)
+            b64_data = base64.b64encode(out_buf.getvalue()).decode("utf-8")
+            return f"data:image/jpeg;base64,{b64_data}"
+        except Exception as e:
+            print(f"Image compression error: {e}")
+    b64_data = base64.b64encode(file_bytes).decode("utf-8")
+    mime = content_type or "image/jpeg"
+    return f"data:{mime};base64,{b64_data}"
+
+@router.post("/{invoice_id}/receipt")
+async def upload_receipt(
+    invoice_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_login)
 ):
     """Student uploads a screenshot/photo of their KHQR payment as proof, awaiting Admin acceptance."""
     reg = db.query(Registration).filter(Registration.invoice_id == invoice_id).first()
@@ -209,15 +240,18 @@ async def upload_payment_receipt(
     if file.content_type not in ALLOWED_RECEIPT_TYPES:
         raise HTTPException(status_code=400, detail="Only JPG, PNG, WEBP or PDF receipts are accepted")
 
+    contents = await file.read()
+
     os.makedirs(RECEIPT_UPLOAD_DIR, exist_ok=True)
     ext = os.path.splitext(file.filename or "")[1] or ".jpg"
     safe_name = f"{invoice_id}_{uuid.uuid4().hex[:8]}{ext}"
     dest_path = os.path.join(RECEIPT_UPLOAD_DIR, safe_name)
 
     with open(dest_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        buffer.write(contents)
 
-    reg.receipt_image_url = f"/static/uploads/receipts/{safe_name}"
+    b64_uri = process_receipt_image_to_b64(contents, file.content_type)
+    reg.receipt_image_url = b64_uri
     reg.status = "SUBMITTED"
     db.commit()
     db.refresh(reg)

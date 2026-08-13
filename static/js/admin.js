@@ -513,7 +513,8 @@ async function openReceiptModal(regId) {
         };
 
         if (r.receipt_image_url) {
-            img.src = r.receipt_image_url + (r.receipt_image_url.includes('?') ? '&' : '?') + 't=' + Date.now();
+            const isB64 = r.receipt_image_url.startsWith('data:');
+            img.src = isB64 ? r.receipt_image_url : (r.receipt_image_url + (r.receipt_image_url.includes('?') ? '&' : '?') + 't=' + Date.now());
             img.style.display = 'block';
             empty.style.display = 'none';
         } else {
